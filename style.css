@@ -160,7 +160,7 @@
   .side-stage .ss-num{font-size:22px;font-weight:800;color:var(--accent-d);}
   .side-stage .ss-hippo{font-size:14px;margin-top:2px;}
   .side-stage .ss-count{font-size:11px;font-weight:800;color:#1a8040;}
-  .skill-slot-big{padding:10px 4px 8px!important;display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:11px;background:rgba(255,255,255,.45);transition:box-shadow .3s,background .3s;}
+  .skill-slot-big{padding:6px 4px 5px!important;display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:11px;background:rgba(255,255,255,.45);transition:box-shadow .3s,background .3s;}
   .skill-sname{font-size:9px;font-weight:800;color:var(--ink);text-align:center;line-height:1.2;}
   .skill-sdesc{font-size:8px;font-weight:700;color:var(--ink-soft);text-align:center;}
   /* 使用可能時：発光アニメーション */
@@ -169,8 +169,7 @@
   /* カバ誕生演出 */
   @keyframes hippoborn{0%{transform:translate(-50%,-50%) scale(1);filter:none;}30%{transform:translate(-50%,-50%) scale(1.45);filter:drop-shadow(0 0 8px gold);}100%{transform:translate(-50%,-50%) scale(1.35);filter:drop-shadow(0 0 6px gold);}}
   .tile.hippo-born{animation:hippoborn .5s ease forwards;z-index:10;}
-  .skill-slot-big .la-big{font-size:28px;line-height:1;}
-  .lv-side .lct{font-size:11px!important;font-weight:800!important;}
+  .skill-slot-big .la-big{font-size:22px;line-height:1;}
   /* ピッケルゲージ＋ボタン */
   .pickaxe-row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.55);border-radius:12px;padding:5px 12px;margin-bottom:3px;font-weight:800;}
   .pickaxe-gauge-bg{flex:1;height:8px;background:rgba(0,0,0,.12);border-radius:4px;overflow:hidden;}
