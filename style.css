@@ -139,7 +139,7 @@
   .goal-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#86efac);border-radius:4px;transition:width .3s;}
   .goal-count{color:#1a8040;min-width:30px;text-align:right;font-size:10px;}
   /* デバッグパネル */
-  #debugPanel{position:fixed;bottom:8px;right:8px;background:rgba(0,0,0,.75);color:#fff;border-radius:10px;font-size:10px;font-family:monospace;z-index:100;line-height:1.8;}
+  #debugPanel{position:fixed;bottom:8px;left:8px;background:rgba(0,0,0,.75);color:#fff;border-radius:10px;font-size:10px;font-family:monospace;z-index:100;line-height:1.8;}
   #debugToggle{cursor:pointer;padding:6px 10px;display:block;font-size:14px;text-align:center;}
   #debugBody{display:none;padding:0 10px 8px;}
   #debugPanel b{color:#ffc400;display:block;margin-bottom:2px;}
