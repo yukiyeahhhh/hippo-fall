@@ -91,6 +91,7 @@
           <div class="skill-charge-bar"><div class="scbf" id="scbf-refresh"></div></div>
           <span class="lct">0%</span>
         </div>
+        <button class="log-open-btn" onclick="toggleLogPanel()" title="履歴を見る">📜</button>
       </div>
     </div><!-- side-col -->
   </div><!-- game-area -->
@@ -106,6 +107,15 @@
     <span style="font-size:16px;">🔨</span>
     <div class="pickaxe-gauge-bg"><div class="pickaxe-gauge-fill" id="pickaxeFill"></div></div>
     <button class="pickaxe-btn" id="pickaxeBtn" onclick="usePickaxe()" disabled>使う</button>
+  </div>
+</div>
+<div class="chikara-panel" id="logPanel">
+  <div class="help-inner">
+    <div class="help-header">
+      <h2>📜 履歴</h2>
+      <button class="help-close" onclick="toggleLogPanel()">✕</button>
+    </div>
+    <div id="logPanelList"></div>
   </div>
 </div>
 <div class="chikara-panel" id="chikaraPanel">

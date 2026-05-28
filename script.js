@@ -223,7 +223,21 @@ function updateChikaraListUI(){
 function toggleChikaraPanel(){
   const p=document.getElementById('chikaraPanel');if(!p)return;
   const show=p.classList.toggle('show');
-  if(show)renderChikaraPanel();
+  if(show){history.pushState({modal:'chikara'},'');renderChikaraPanel();}
+}
+function toggleLogPanel(){
+  const p=document.getElementById('logPanel');if(!p)return;
+  const show=p.classList.toggle('show');
+  if(show){history.pushState({modal:'log'},'');renderLogPanel();}
+}
+function renderLogPanel(){
+  const el=document.getElementById('logPanelList');if(!el)return;
+  if(gameLog.length===0){el.innerHTML='<div class="log-empty">まだ記録がないよ</div>';return;}
+  const typeIcon={chain:'🔥',warn:'🔺',item:'✨',toast:'💬',cutin:'🎬',stage:'📌'};
+  el.innerHTML=gameLog.map(e=>{
+    const ico=typeIcon[e.type]||'•';
+    return`<div class="log-entry log-${e.type}"><span class="log-ico">${ico}</span><span class="log-txt">${e.txt}</span><span class="log-drop">${e.drop}手</span></div>`;
+  }).join('');
 }
 function renderChikaraPanel(){
   const el=document.getElementById('chikaraPanelList');if(!el)return;
@@ -406,6 +420,7 @@ const CUTIN_IMAGES={
 };
 (()=>{Object.values(CUTIN_IMAGES).forEach(src=>{const i=new Image();i.src=src;});})();
 async function showCutin(title, message, duration=2200){
+  pushLog('cutin','🎬 '+title);
   gamePaused=true;
   const el=document.getElementById('cutinOverlay');
   const img=document.getElementById('cutinImg');
@@ -794,6 +809,7 @@ function newGame(){
   COLS=BOARD_COLS;ROWS=BOARD_ROWS;
   grid=Array.from({length:ROWS},()=>Array(COLS).fill(0));
   tiles={};uid=1;maxChain=0;waveCount=0;survivedDrops=0;resetWaveInterval();activeDropId=0;gameVersion++;busy=false;
+  gameLog.length=0;pushLog('stage','🏁 ゲームスタート');
   // 新システムのリセット
   for(const k of Object.keys(activeSkills))activeSkills[k].gauge=0;
   pickaxeGauge=0;
@@ -1058,9 +1074,17 @@ async function riseStep(){
   await processDraftQueue();
 }
 
+// ─ ゲームログ ─
+const gameLog=[];
+function pushLog(type,txt){
+  gameLog.unshift({type,txt,drop:totalDrops});
+  if(gameLog.length>150)gameLog.length=150;
+}
+
 // フローティングメッセージキュー（重なり防止）
 const _floatQueue=[];let _floatRunning=false;
 function floatEl(type,txt){
+  if(type!=='pts')pushLog(type,txt);
   _floatQueue.push({type,txt});
   if(!_floatRunning)_drainFloatQueue();
 }
@@ -1152,12 +1176,30 @@ boardEl.addEventListener('pointerleave',()=>bgCells.forEach(d=>d.classList.remov
 document.getElementById('ovBtn').onclick=newGame;
 document.getElementById('retryStageBtn').onclick=retryStage;
 document.getElementById('clearOkBtn').onclick=newGame;
-function showRestartModal(){document.getElementById('restartModal').classList.add('show');}
+function showRestartModal(){history.pushState({modal:'restart'},'');document.getElementById('restartModal').classList.add('show');}
 function hideRestartModal(){document.getElementById('restartModal').classList.remove('show');}
 function confirmRetryStage(){hideRestartModal();retryStage();}
 function confirmNewGame(){hideRestartModal();newGame();}
 document.getElementById('shareBtn').addEventListener('click',()=>{const txt=`🐹どうぶつポトン🦛\nStage${currentStage}到達！\nカバ${hippoMade}体 ／ 最大${maxChain}チェイン\n#どうぶつポトン`;if(navigator.share){navigator.share({text:txt}).catch(()=>{});}else{navigator.clipboard.writeText(txt).then(()=>{const b=document.getElementById('shareBtn');b.textContent='コピー済み✓';setTimeout(()=>{b.textContent='シェア📤';},2000);}).catch(()=>{});}});
-function toggleHelp(){document.getElementById('helpPanel').classList.toggle('show');}
+function toggleHelp(){
+  const p=document.getElementById('helpPanel');
+  const open=p.classList.toggle('show');
+  if(open)history.pushState({modal:'help'},'');
+}
+function toggleDebug(){
+  const p=document.getElementById('debugPanel');
+  const open=p.style.display!=='block';
+  p.style.display=open?'block':'none';
+  if(open)history.pushState({modal:'debug'},'');
+}
+// スマホ戻るボタン：開いているモーダルを閉じる
+window.addEventListener('popstate',()=>{
+  const dp=document.getElementById('debugPanel');
+  if(dp?.style.display==='block'){dp.style.display='none';return;}
+  const panels=['chikaraPanel','logPanel','helpPanel'];
+  for(const id of panels){const el=document.getElementById(id);if(el?.classList.contains('show')){el.classList.remove('show');return;}}
+  if(document.getElementById('restartModal')?.classList.contains('show')){hideRestartModal();}
+});
 try{newGame();}catch(e){window.onerror(e.message,'',0,0,e);}
 
 // ─ デバッグパネル ─
@@ -1173,7 +1215,6 @@ function debugAddArtifacts(n){
   updateChikaraListUI();
   floatEl('item','✨ ひらめき'+n+'個追加！');
 }
-function toggleDebug(){const p=document.getElementById('debugPanel');p.style.display=p.style.display==='block'?'none':'block';}
 function setParam(key,val){
   if(key==='waveInterval'){_dpWaveInterval=val;document.getElementById('dp-waveInterval').textContent=val+'手';}
   if(key==='rockRate'){_dpBlockRate=val;document.getElementById('dp-blockRate').textContent=Math.round(val*100)+'%';}
