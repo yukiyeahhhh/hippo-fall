@@ -139,9 +139,8 @@
   .goal-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#86efac);border-radius:4px;transition:width .3s;}
   .goal-count{font-size:15px;font-weight:800;color:#fff;background:#22c55e;border-radius:8px;padding:1px 8px;flex-shrink:0;}
   /* デバッグパネル */
-  #debugPanel{position:fixed;bottom:8px;left:8px;background:rgba(0,0,0,.75);color:#fff;border-radius:10px;font-size:10px;font-family:monospace;z-index:100;line-height:1.8;}
-  #debugToggle{cursor:pointer;padding:6px 10px;display:block;font-size:14px;text-align:center;}
-  #debugBody{display:none;padding:0 10px 8px;}
+  #debugPanel{position:fixed;top:44px;right:8px;background:rgba(0,0,0,.75);color:#fff;border-radius:10px;font-size:10px;font-family:monospace;z-index:100;line-height:1.8;display:none;}
+  #debugBody{padding:8px 10px;}
   #debugPanel b{color:#ffc400;display:block;margin-bottom:2px;}
   .dp-row{display:flex;align-items:center;gap:4px;margin-bottom:2px;}
   .dp-label{min-width:90px;color:#aaa;}

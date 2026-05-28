@@ -1170,7 +1170,7 @@ function debugAddArtifacts(n){
   updateChikaraListUI();
   floatEl('item','✨ ひらめき'+n+'個追加！');
 }
-function toggleDebug(){const b=document.getElementById('debugBody');const t=document.getElementById('debugToggle');const open=b.style.display==='block';b.style.display=open?'none':'block';t.textContent=open?'⚙️':'✕';}
+function toggleDebug(){const p=document.getElementById('debugPanel');p.style.display=p.style.display==='block'?'none':'block';}
 function setParam(key,val){
   if(key==='waveInterval'){_dpWaveInterval=val;document.getElementById('dp-waveInterval').textContent=val+'手';}
   if(key==='rockRate'){_dpBlockRate=val;document.getElementById('dp-blockRate').textContent=Math.round(val*100)+'%';}
