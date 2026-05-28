@@ -14,6 +14,7 @@
   <div class="top">
     <div class="title"><h1>どうぶつポトン</h1><div class="sub">🎲 ROGUELITE MODE</div></div>
     <div style="display:flex;gap:4px;">
+      <button class="help-btn" id="restart" onclick="showRestartModal()" style="margin:0;padding:5px 8px;font-size:10px;">↺</button>
       <button class="help-btn" onclick="toggleDebug()" style="margin:0;padding:5px 8px;font-size:10px;">⚙️</button>
       <button class="help-btn" onclick="toggleHelp()" style="margin:0;padding:5px 8px;font-size:10px;">❓</button>
     </div>
@@ -106,7 +107,6 @@
     <div class="pickaxe-gauge-bg"><div class="pickaxe-gauge-fill" id="pickaxeFill"></div></div>
     <button class="pickaxe-btn" id="pickaxeBtn" onclick="usePickaxe()" disabled>使う</button>
   </div>
-  <div class="controls"><button class="btn restart-btn" id="restart">↺ リスタート</button></div>
 </div>
 <div class="chikara-panel" id="chikaraPanel">
   <div class="help-inner">
@@ -115,6 +115,21 @@
       <button class="help-close" onclick="toggleChikaraPanel()">✕</button>
     </div>
     <div id="chikaraPanelList"></div>
+  </div>
+</div>
+<div class="restart-modal" id="restartModal">
+  <div class="restart-box">
+    <div class="restart-title">↺ リスタート</div>
+    <div class="restart-sub">どこからやり直しますか？</div>
+    <button class="restart-opt" onclick="confirmRetryStage()">
+      <span class="ro-emo">🔄</span>
+      <span class="ro-body"><b>このステージをやり直す</b><br><span>ひらめき・ステージ数はそのまま</span></span>
+    </button>
+    <button class="restart-opt restart-opt-full" onclick="confirmNewGame()">
+      <span class="ro-emo">🏁</span>
+      <span class="ro-body"><b>Stage 1 から最初から</b><br><span>ひらめき・ステージ数もリセット</span></span>
+    </button>
+    <button class="restart-cancel" onclick="hideRestartModal()">キャンセル</button>
   </div>
 </div>
 <div class="help-panel" id="helpPanel">

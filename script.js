@@ -405,7 +405,7 @@ const CUTIN_IMAGES={
   'ハンマー発動！':        'assets/cutin_hammer.webp',
 };
 (()=>{Object.values(CUTIN_IMAGES).forEach(src=>{const i=new Image();i.src=src;});})();
-async function showCutin(title, message, duration=1500){
+async function showCutin(title, message, duration=2200){
   gamePaused=true;
   const el=document.getElementById('cutinOverlay');
   const img=document.getElementById('cutinImg');
@@ -1152,7 +1152,10 @@ boardEl.addEventListener('pointerleave',()=>bgCells.forEach(d=>d.classList.remov
 document.getElementById('ovBtn').onclick=newGame;
 document.getElementById('retryStageBtn').onclick=retryStage;
 document.getElementById('clearOkBtn').onclick=newGame;
-document.getElementById('restart').onclick=newGame;
+function showRestartModal(){document.getElementById('restartModal').classList.add('show');}
+function hideRestartModal(){document.getElementById('restartModal').classList.remove('show');}
+function confirmRetryStage(){hideRestartModal();retryStage();}
+function confirmNewGame(){hideRestartModal();newGame();}
 document.getElementById('shareBtn').addEventListener('click',()=>{const txt=`🐹どうぶつポトン🦛\nStage${currentStage}到達！\nカバ${hippoMade}体 ／ 最大${maxChain}チェイン\n#どうぶつポトン`;if(navigator.share){navigator.share({text:txt}).catch(()=>{});}else{navigator.clipboard.writeText(txt).then(()=>{const b=document.getElementById('shareBtn');b.textContent='コピー済み✓';setTimeout(()=>{b.textContent='シェア📤';},2000);}).catch(()=>{});}});
 function toggleHelp(){document.getElementById('helpPanel').classList.toggle('show');}
 try{newGame();}catch(e){window.onerror(e.message,'',0,0,e);}
