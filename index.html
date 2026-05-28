@@ -75,7 +75,7 @@
         <!-- 下部：スキルスロット縦長 -->
         <div class="lv-side skill-slot-big" id="slot-squirrel" onclick="activateSkill('squirrel')">
           <span class="la-big">🐿️</span>
-          <div class="skill-sname">ギリギリセーフ</div>
+          <div class="skill-sname">セーフ</div>
           <div class="skill-charge-bar"><div class="scbf" id="scbf-squirrel"></div></div>
           <span class="lct">0%</span>
         </div>
@@ -87,7 +87,7 @@
         </div>
         <div class="lv-side skill-slot-big" id="slot-refresh" onclick="activateSkill('refresh')">
           <span class="la-big">🦦</span>
-          <div class="skill-sname">ぐるぐる<br>シャッフル</div>
+          <div class="skill-sname">シャッフル</div>
           <div class="skill-charge-bar"><div class="scbf" id="scbf-refresh"></div></div>
           <span class="lct">0%</span>
         </div>
@@ -145,46 +145,64 @@
 <div class="help-panel" id="helpPanel">
   <div class="help-inner">
     <div class="help-header"><h2>📖 あそびかた</h2><button class="help-close" onclick="toggleHelp()">✕</button></div>
-    <div class="help-section">
-      <h3>🐾 進化のじゅんばん</h3>
+
+    <div class="help-card">
+      <div class="hc-title">🐾 進化のじゅんばん</div>
       <div class="help-chain"><span>🐹</span><span class="arr">▶</span><span>🐿️</span><span class="arr">▶</span><span>🦆</span><span class="arr">▶</span><span>🦦</span><span class="arr">▶</span><span>🦛</span></div>
-      <div class="help-rule-row" style="margin-top:4px;"><span class="ri">💡</span><span>同じ動物が<b>3匹以上</b>くっつくと合体・進化するよ！</span></div>
+      <div class="hc-note">同じ動物が<b>3匹以上</b>くっつくと合体・進化するよ！</div>
     </div>
-    <div class="help-section">
-      <h3>🏁 目的</h3>
-      <div class="help-rule-row"><span class="ri">🦛</span><span><b>指定された数のコビトカバを作るとステージクリア！</b></span></div>
-      <div class="help-rule-row"><span class="ri">☠️</span><span>盤面の赤いラインを越えたらゲームオーバーだよ。</span></div>
+
+    <div class="help-card">
+      <div class="hc-title">🏁 目的</div>
+      <div class="hc-row"><span class="hc-emo">🦛</span><span><b>指定された数のコビトカバを作るとステージクリア！</b></span></div>
+      <div class="hc-row"><span class="hc-emo">☠️</span><span>赤いラインを越えたらゲームオーバー。</span></div>
     </div>
-    <div class="help-section">
-      <h3>🔺 せりあがり</h3>
-      <div class="help-rule-row"><span class="ri">🔺</span><span>一定の手数ごとに、下から<b>おじゃまブロックがせりあがってくるよ</b>。</span></div>
-      <div class="help-rule-row"><span class="ri">📈</span><span>ステージが進むほどブロックの量が増えるから注意！</span></div>
+
+    <div class="help-card">
+      <div class="hc-title">🔺 せりあがり</div>
+      <div class="hc-row"><span class="hc-emo">🔺</span><span>一定の手数ごとに、下から<b>おじゃまブロックがせりあがってくるよ。</b></span></div>
+      <div class="hc-row"><span class="hc-emo">📈</span><span>ステージが進むほどブロックの量が増えるから注意！</span></div>
     </div>
-    <div class="help-section">
-      <h3>🔨 ハンマー</h3>
-      <div class="help-rule-row"><span class="ri">🔨</span><span>盤面下のゲージが満タンで使えるよ！</span></div>
-      <div class="help-rule-row"><span class="ri">💪</span><span><b>合体・連鎖・せりあがりを耐える</b>とゲージが溜まるよ。</span></div>
-      <div class="help-rule-row"><span class="ri">💥</span><span>「使う」ボタンで<b>おじゃまブロックを一気に壊して</b>大逆転を狙おう！</span></div>
+
+    <div class="help-card">
+      <div class="hc-title">🔨 ハンマー</div>
+      <div class="hc-row"><span class="hc-emo">💪</span><span><b>合体・連鎖でゲージが溜まるよ。</b>満タンになると使える！</span></div>
+      <div class="hc-row"><span class="hc-emo">💥</span><span>「使う」ボタンで<b>おじゃまブロックを一気に壊して</b>大逆転を狙おう！</span></div>
     </div>
-    <div class="help-section">
-      <h3>🎁 おたすけアクション</h3>
-      <div class="help-item-row"><span class="ie">🐿️</span><span class="in">ギリギリセーフ<br><span class="id">🐿️リスに進化でゲージ+33%</span></span><span>デンジャーライン付近のブロックを一掃！</span></div>
-      <div class="help-item-row"><span class="ie">🦆</span><span class="in">大行進<br><span class="id">🦆アヒルに進化でゲージ+33%</span></span><span>ランダムな動物2〜3匹をアヒルに変換！</span></div>
-      <div class="help-item-row"><span class="ie">🦦</span><span class="in">ぐるぐるシャッフル<br><span class="id">🦦カワウソに進化でゲージ+33%</span></span><span>ブロックはそのままで、動物の位置をシャッフル！</span></div>
-      <div class="help-rule-row" style="margin-top:6px;"><span class="ri">📌</span><span>動物を進化させるとゲージが溜まるよ。100%になるとボタンを押せる！</span></div>
+
+    <div class="help-card">
+      <div class="hc-title">🎁 おたすけアクション</div>
+      <div class="hc-action">
+        <div class="hca-head"><span class="hca-emo">🐿️</span><span class="hca-name">ギリギリセーフ</span></div>
+        <div class="hca-trigger">リスに進化でゲージ +33%</div>
+        <div class="hca-effect">デンジャーライン付近のブロックを一掃！</div>
+      </div>
+      <div class="hc-action">
+        <div class="hca-head"><span class="hca-emo">🦆</span><span class="hca-name">大行進</span></div>
+        <div class="hca-trigger">アヒルに進化でゲージ +33%</div>
+        <div class="hca-effect">ランダムな動物2〜3匹をアヒルに変換！</div>
+      </div>
+      <div class="hc-action">
+        <div class="hca-head"><span class="hca-emo">🦦</span><span class="hca-name">ぐるぐるシャッフル</span></div>
+        <div class="hca-trigger">カワウソに進化でゲージ +33%</div>
+        <div class="hca-effect">ブロックはそのまま、動物の位置をシャッフル！</div>
+      </div>
     </div>
-    <div class="help-section">
-      <h3>🦛 コビトカバのひらめき</h3>
-      <div class="help-rule-row"><span class="ri">🦛</span><span>コビトカバを作るたびに<b>ひらめきを1つ選べる。</b>ステージをまたいでずっと持続するよ！</span></div>
-      <div class="help-rule-row"><span class="ri">⬆️</span><span>同じひらめきを重ねて選ぶと<b>レベルアップ</b>して効果が倍増！</span></div>
-      <div class="help-rule-row"><span class="ri">💡</span><span>おたすけアクションを強化するもの、ハンマーを強化するもの、進化・合体に連動するものなど種類はさまざま。ゲーム中の <b>💡🦛ボタン</b>で手持ちのひらめきを確認できるよ！</span></div>
+
+    <div class="help-card">
+      <div class="hc-title">🦛 コビトカバのひらめき</div>
+      <div class="hc-row"><span class="hc-emo">✨</span><span>コビトカバを作ると<b>ひらめきを1つ選べる！</b><br>最初は1匹・次は2匹・以降は3匹ごとにチャンスが来る。</span></div>
+      <div class="hc-row"><span class="hc-emo">🔗</span><span>ひらめきは<b>ステージをまたいで持続</b>するよ。</span></div>
+      <div class="hc-row"><span class="hc-emo">⬆️</span><span>同じひらめきを重ね取りすると<b>レベルアップ</b>して効果が強くなる！</span></div>
+      <div class="hc-row"><span class="hc-emo">💡</span><span>ゲーム中の <b>💡🦛ボタン</b> で手持ちのひらめきを確認できるよ！</span></div>
     </div>
-    <div class="help-section">
-      <h3>🌟 ステージ進行</h3>
-      <div class="help-rule-row"><span class="ri">1️⃣</span><span>STAGE 1：コビトカバ1匹作成でクリア（盤面は空）</span></div>
-      <div class="help-rule-row"><span class="ri">2️⃣</span><span>STAGE 2：コビトカバ2匹／おじゃまブロックが少し配置された盤面</span></div>
-      <div class="help-rule-row"><span class="ri">3️⃣</span><span>STAGE 3〜5：コビトカバ2〜3匹／ブロックと動物が入り乱れた盤面でスタート</span></div>
-      <div class="help-rule-row"><span class="ri">♾️</span><span>STAGE 6以降：エンドレス！ステージごとに難しくなっていくよ</span></div>
+
+    <div class="help-card">
+      <div class="hc-title">🌟 ステージ進行</div>
+      <div class="hc-row"><span class="hc-emo">1️⃣</span><span>STAGE 1：カバ1匹／盤面は空からスタート</span></div>
+      <div class="hc-row"><span class="hc-emo">2️⃣</span><span>STAGE 2：カバ2匹／ブロックが少し配置</span></div>
+      <div class="hc-row"><span class="hc-emo">3️⃣</span><span>STAGE 3〜5：カバ2〜3匹／ブロックと動物が入り乱れた盤面</span></div>
+      <div class="hc-row"><span class="hc-emo">♾️</span><span>STAGE 6以降：エンドレス！ステージごとに難しくなるよ</span></div>
     </div>
   </div>
 </div>

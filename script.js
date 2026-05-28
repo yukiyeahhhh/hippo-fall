@@ -1075,8 +1075,6 @@ async function riseStep(){
   applyGravity();render();
   await sleep(200);
   await resolveBoard();
-  // ─ 波を1回やり過ごした報酬（波乗り等でカバが生まれる可能性あり） ─
-  addPickaxeProgress(PICKAXE_WAVE_GAIN);
   fireArtifactHook('onWave');
   // 波乗り等でpendingHippoになったタイルを演出処理
   await processPendingHippos();
@@ -1103,7 +1101,7 @@ function _drainFloatQueue(){
   const f=document.createElement('div');
   f.className='float '+type;f.textContent=txt;
   boardEl.appendChild(f);
-  setTimeout(()=>{f.remove();_drainFloatQueue();},type==='chain'||type==='warn'?520:380);
+  setTimeout(()=>{f.remove();_drainFloatQueue();},type==='chain'||type==='warn'?520:type==='item'?700:380);
 }
 function shake(){boardEl.classList.remove('shake');void boardEl.offsetWidth;boardEl.classList.add('shake');setTimeout(()=>boardEl.classList.remove('shake'),360);}
 function burst(){const ico=['✨','💫','⭐','🦛'];for(let i=0;i<8;i++){const p=document.createElement('div');p.className='particle';const ang=Math.random()*6.28,dist=42+Math.random()*55;p.style.left=(35+Math.random()*30)+'%';p.style.top=(30+Math.random()*30)+'%';p.style.setProperty('--tx',(Math.cos(ang)*dist)+'px');p.style.setProperty('--ty',(Math.sin(ang)*dist)+'px');p.textContent=ico[i%4];boardEl.appendChild(p);setTimeout(()=>p.remove(),620);}}

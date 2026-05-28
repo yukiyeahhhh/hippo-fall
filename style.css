@@ -82,6 +82,21 @@
   .help-close{background:var(--board);color:var(--ink);border:none;border-radius:10px;font-size:18px;width:36px;height:36px;cursor:pointer;font-family:inherit;font-weight:800;}
   .help-section{margin-bottom:16px;}
   .help-section h3{font-size:12px;font-weight:800;color:var(--accent-d);margin-bottom:8px;letter-spacing:.5px;}
+  /* ヘルプカード */
+  .help-card{background:rgba(255,255,255,.65);border-radius:14px;padding:12px 12px 10px;margin-bottom:10px;box-shadow:0 2px 8px rgba(120,70,30,.08);}
+  .hc-title{font-size:13px;font-weight:800;color:#fff;background:var(--accent);border-radius:7px;padding:3px 10px;margin-bottom:10px;display:inline-block;}
+  .hc-row{display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:11px;font-weight:700;color:var(--ink-soft);border-bottom:1px solid rgba(150,100,60,.07);}
+  .hc-row:last-child{border-bottom:none;}
+  .hc-emo{font-size:14px;flex-shrink:0;line-height:1.4;}
+  .hc-note{font-size:11px;font-weight:700;color:var(--ink-soft);margin-top:6px;}
+  /* おたすけアクション個別 */
+  .hc-action{background:rgba(255,255,255,.5);border-radius:10px;padding:8px 10px;margin-bottom:6px;}
+  .hc-action:last-child{margin-bottom:0;}
+  .hca-head{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+  .hca-emo{font-size:20px;line-height:1;}
+  .hca-name{font-size:13px;font-weight:800;color:var(--ink);}
+  .hca-trigger{font-size:10px;font-weight:700;color:var(--ink-soft);margin-bottom:3px;padding-left:26px;}
+  .hca-effect{font-size:11px;font-weight:700;color:var(--ink);padding-left:26px;}
   .help-chain{display:flex;align-items:center;justify-content:center;gap:4px;font-size:22px;margin-bottom:8px;}
   .help-chain .arr{font-size:10px;color:var(--ink-soft);}
   .help-merge-table{width:100%;border-collapse:collapse;font-size:11px;font-weight:700;}
@@ -160,8 +175,9 @@
   .side-stage .ss-hippo{font-size:14px;margin-top:2px;}
   .side-stage .ss-count{font-size:11px;font-weight:800;color:#1a8040;}
   .skill-slot-big{padding:6px 4px 5px!important;display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:11px;background:rgba(255,255,255,.45);transition:box-shadow .3s,background .3s;}
-  .skill-sname{font-size:9px;font-weight:800;color:var(--ink);text-align:center;line-height:1.2;}
+  .skill-sname{font-size:10px;font-weight:800;color:var(--ink);text-align:center;line-height:1.2;}
   .skill-sdesc{font-size:8px;font-weight:700;color:var(--ink-soft);text-align:center;}
+  .lv-side .lct{font-size:10px!important;font-weight:800!important;color:var(--ink-soft)!important;}
   /* 使用可能時：発光アニメーション */
   @keyframes skillglow{0%,100%{box-shadow:0 0 0 0 rgba(250,200,0,.8);background:rgba(255,235,130,.65);}50%{box-shadow:0 0 0 7px rgba(250,200,0,0);background:rgba(255,240,160,.9);}}
   .skill-ready{animation:skillglow .85s ease infinite!important;cursor:pointer;}
