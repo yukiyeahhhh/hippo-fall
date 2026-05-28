@@ -398,13 +398,14 @@ function updatePickaxeUI(){
 }
 // ─ カットイン演出（基盤） ─
 const CUTIN_IMAGES={
-  'リスのギリギリセーフ！': 'assets/cutin_squirrel.png',
-  'アヒルの大行進！':      'assets/cutin_duck_march.png',
-  'ぐるぐるシャッフル！':  'assets/cutin_refresh.png',
-  'コビトカバ誕生！':      'assets/cutin_hippo_born.png',
-  'コビトカバのひらめき！':'assets/cutin_draft.png',
-  'ハンマー発動！':        'assets/cutin_hammer.png',
+  'リスのギリギリセーフ！': 'assets/cutin_squirrel.webp',
+  'アヒルの大行進！':      'assets/cutin_duck_march.webp',
+  'ぐるぐるシャッフル！':  'assets/cutin_refresh.webp',
+  'コビトカバ誕生！':      'assets/cutin_hippo_born.webp',
+  'コビトカバのひらめき！':'assets/cutin_draft.webp',
+  'ハンマー発動！':        'assets/cutin_hammer.webp',
 };
+(()=>{Object.values(CUTIN_IMAGES).forEach(src=>{const i=new Image();i.src=src;});})();
 async function showCutin(title, message, duration=1500){
   gamePaused=true;
   const el=document.getElementById('cutinOverlay');
@@ -444,11 +445,11 @@ function activateSkill(key){
 }
 // ─ アクティブスキル効果 ─
 
-// 🐿️ リスのギリギリセーフ：デンジャーライン直下2行のブロックを全破壊
+// 🐿️ リスのギリギリセーフ：デンジャーライン付近2行のブロックを全破壊
 async function applySquirrelSave(){
   SFX.itemSquirrel();await showCutin('リスのギリギリセーフ！','');
   const toDestroy=[];
-  for(let row=DANGER_ROW+1;row<=DANGER_ROW+2;row++){
+  for(let row=DANGER_ROW;row<=DANGER_ROW+1;row++){
     if(row>=ROWS)continue;
     for(let c=0;c<COLS;c++){const id=grid[row][c];if(id&&tiles[id]&&tiles[id].rock)toDestroy.push(id);}
   }

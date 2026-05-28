@@ -106,8 +106,7 @@
     <div class="pickaxe-gauge-bg"><div class="pickaxe-gauge-fill" id="pickaxeFill"></div></div>
     <button class="pickaxe-btn" id="pickaxeBtn" onclick="usePickaxe()" disabled>使う</button>
   </div>
-  <div class="hint">列をタップして落とす 🫳　赤いラインを越えたら負け　<b>コビトカバ🦛を作ってステージクリア！</b></div>
-  <div class="controls"><button class="btn" id="restart">リスタート</button></div>
+  <div class="controls"><button class="btn restart-btn" id="restart">↺ リスタート</button></div>
 </div>
 <div class="chikara-panel" id="chikaraPanel">
   <div class="help-inner">
@@ -124,7 +123,7 @@
     <div class="help-section">
       <h3>🐾 進化のじゅんばん</h3>
       <div class="help-chain"><span>🐹</span><span class="arr">▶</span><span>🐿️</span><span class="arr">▶</span><span>🦆</span><span class="arr">▶</span><span>🦦</span><span class="arr">▶</span><span>🦛</span></div>
-      <div class="help-rule-row" style="margin-top:4px;"><span class="ri">💡</span><span>同じ動物が2匹以上くっつくと合体・進化するよ！</span></div>
+      <div class="help-rule-row" style="margin-top:4px;"><span class="ri">💡</span><span>同じ動物が<b>3匹以上</b>くっつくと合体・進化するよ！</span></div>
     </div>
     <div class="help-section">
       <h3>🏁 目的</h3>
@@ -151,15 +150,9 @@
     </div>
     <div class="help-section">
       <h3>🦛 コビトカバのひらめき</h3>
-      <div class="help-rule-row"><span class="ri">🦛</span><span>コビトカバを1匹作るたびに、<b>新しいひらめきを選べるよ！</b>同じ能力を重ねて取るとレベルアップして効果が強くなる！</span></div>
-      <div class="help-item-row"><span class="ie">🔨</span><span class="in">思わぬ掘り出し物</span><span>ハンマー後、Lvに応じた数の動物が出現</span></div>
-      <div class="help-item-row"><span class="ie">♻️</span><span class="in">エコサイクル</span><span>おたすけアクション使用でハンマーゲージ +15%×Lv</span></div>
-      <div class="help-item-row"><span class="ie">🦦</span><span class="in">カワウソの恩返し</span><span>カワウソができたらおじゃまブロック Lv個破壊</span></div>
-      <div class="help-item-row"><span class="ie">🦛</span><span class="in">はりきりボーナス</span><span>4匹いっきに合体でおたすけアクションゲージ各 +30%×Lv</span></div>
-      <div class="help-item-row"><span class="ie">🦆</span><span class="in">ひょっこりアヒル</span><span>せりあがりのたびに上から Lv匹の動物がアヒルに</span></div>
-      <div class="help-item-row"><span class="ie">🌰</span><span class="in">どんぐりのおすそわけ</span><span>ギリギリセーフ使用でハンマーゲージ +10%×Lv</span></div>
-      <div class="help-item-row"><span class="ie">🌪️</span><span class="in">おまけの竜巻</span><span>ぐるぐるシャッフル使用でおじゃまブロック Lv個破壊</span></div>
-      <div class="help-item-row"><span class="ie">🔗</span><span class="in">おたすけの連鎖</span><span>おたすけアクション使用で他の動物ゲージ +10%×Lv</span></div>
+      <div class="help-rule-row"><span class="ri">🦛</span><span>コビトカバを作るたびに<b>ひらめきを1つ選べる。</b>ステージをまたいでずっと持続するよ！</span></div>
+      <div class="help-rule-row"><span class="ri">⬆️</span><span>同じひらめきを重ねて選ぶと<b>レベルアップ</b>して効果が倍増！</span></div>
+      <div class="help-rule-row"><span class="ri">💡</span><span>おたすけアクションを強化するもの、ハンマーを強化するもの、進化・合体に連動するものなど種類はさまざま。ゲーム中の <b>💡🦛ボタン</b>で手持ちのひらめきを確認できるよ！</span></div>
     </div>
     <div class="help-section">
       <h3>🌟 ステージ進行</h3>
