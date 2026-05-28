@@ -42,6 +42,7 @@ let waveCount=0; // これまでに来た波の回数
 let survivedDrops=0; // 生き残った手数
 let dropsUntilWave=10; // 次の波までの手数
 let currentWaveInterval=10; // 現在の波間隔（カバ作成で短縮される）
+const gameLog=[];
 
 // ─ アクティブスキル（進化で獲得・盤面外スロット） ─
 const SKILL_GAUGE_PER_EVOLVE=1/3; // 進化1回でゲージが33%溜まる（3回で100%）
@@ -232,12 +233,20 @@ function toggleLogPanel(){
 }
 function renderLogPanel(){
   const el=document.getElementById('logPanelList');if(!el)return;
-  if(gameLog.length===0){el.innerHTML='<div class="log-empty">まだ記録がないよ</div>';return;}
+  el.innerHTML='';
+  if(!gameLog||gameLog.length===0){
+    const d=document.createElement('div');d.className='log-empty';d.textContent='まだ記録がないよ';el.appendChild(d);return;
+  }
   const typeIcon={chain:'🔥',warn:'🔺',item:'✨',toast:'💬',cutin:'🎬',stage:'📌'};
-  el.innerHTML=gameLog.map(e=>{
-    const ico=typeIcon[e.type]||'•';
-    return`<div class="log-entry log-${e.type}"><span class="log-ico">${ico}</span><span class="log-txt">${e.txt}</span><span class="log-drop">${e.drop}手</span></div>`;
-  }).join('');
+  for(let i=0;i<gameLog.length;i++){
+    const e=gameLog[i];
+    const row=document.createElement('div');row.className='log-entry log-'+(e.type||'');
+    const ico=document.createElement('span');ico.className='log-ico';ico.textContent=typeIcon[e.type]||'•';
+    const txt=document.createElement('span');txt.className='log-txt';txt.textContent=e.txt||'';
+    const drop=document.createElement('span');drop.className='log-drop';drop.textContent=(e.drop||0)+'手';
+    row.appendChild(ico);row.appendChild(txt);row.appendChild(drop);
+    el.appendChild(row);
+  }
 }
 function renderChikaraPanel(){
   const el=document.getElementById('chikaraPanelList');if(!el)return;
@@ -1075,7 +1084,6 @@ async function riseStep(){
 }
 
 // ─ ゲームログ ─
-const gameLog=[];
 function pushLog(type,txt){
   gameLog.unshift({type,txt,drop:totalDrops});
   if(gameLog.length>150)gameLog.length=150;
