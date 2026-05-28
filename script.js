@@ -24,13 +24,10 @@ const STAGE_CONFIG=[
 const TOTAL_STAGES=5;
 const ANIMALS=[null,{emo:'🐹',nm:'ハムスター',cls:'t1'},{emo:'🐿️',nm:'リス',cls:'t2'},{emo:'🦆',nm:'アヒル',cls:'t3'},{emo:'🦦',nm:'カワウソ',cls:'t4'},{emo:'🦛',nm:'コビトカバ',cls:'t5'}];
 const MAX_TIER=5,MAX_CHAIN=9;
-const SCORE_TABLE=[0,0,4,14,45,150];
-const POP_SCORE=400,NEIGHBOR_SCORE=25;
 const LS_KEY='animalDrop_roguelite_v2';
 
 // ─ DOM要素 ─
 const gridEl=document.getElementById('grid'),tilesEl=document.getElementById('tiles');
-const scoreEl=document.getElementById('score'),bestEl=document.getElementById('best');
 const cnowEl=document.getElementById('cnow'),cnextEl=document.getElementById('cnext');
 const boardEl=document.getElementById('board'),overlay=document.getElementById('overlay');
 const riseCountEl=document.getElementById('riseCount');
@@ -39,7 +36,7 @@ for(let i=0;i<COLS*ROWS;i++){const d=document.createElement('div');d.className='
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 // ─ 状態変数 ─
-let grid,tiles,uid,score,best=0,current,next,maxChain,activeDropId=0,gameVersion=0,busy=false;
+let grid,tiles,uid,current,next,maxChain,activeDropId=0,gameVersion=0,busy=false;
 let totalDrops=0;
 let waveCount=0; // これまでに来た波の回数
 let survivedDrops=0; // 生き残った手数
@@ -79,9 +76,8 @@ function isClearable(id){if(!id||!tiles[id])return false;return !tiles[id].rock;
 
 // ─ LocalStorage ─
 function loadHistory(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'[]');}catch(e){return[];}}
-function saveHistory(e){let h=loadHistory();h.unshift(e);h=h.sort((a,b)=>b.score-a.score).slice(0,5);try{localStorage.setItem(LS_KEY,JSON.stringify(h));}catch(e){}return h;}
-function getBestScore(){const h=loadHistory();return h.length?h[0].score:0;}
-function renderHistory(h){const el=document.getElementById('historyList');if(!el)return;el.innerHTML=h.slice(0,5).map((e,i)=>{const m=['🥇','🥈','🥉','4.','5.'][i];const d=new Date(e.date);const ds=`${d.getMonth()+1}/${d.getDate()}`;return`<li><span class="history-rank">${m}</span><span>${e.score.toLocaleString()}点</span><span>最大${e.maxChain}チェイン</span><span>${ds}</span></li>`;}).join('');}
+function saveHistory(e){let h=loadHistory();h.unshift(e);h=h.sort((a,b)=>(b.stage||0)-(a.stage||0)||(b.maxChain||0)-(a.maxChain||0)).slice(0,5);try{localStorage.setItem(LS_KEY,JSON.stringify(h));}catch(e){}return h;}
+function renderHistory(h){const el=document.getElementById('historyList');if(!el)return;el.innerHTML=h.slice(0,5).map((e,i)=>{const m=['🥇','🥈','🥉','4.','5.'][i];const d=new Date(e.date);const ds=`${d.getMonth()+1}/${d.getDate()}`;const stageStr=e.stage?`Stage${e.stage}`:'?';return`<li><span class="history-rank">${m}</span><span>${stageStr}</span><span>最大${e.maxChain}チェイン</span><span>${ds}</span></li>`;}).join('');}
 
 // ─ 共有 AudioContext ─
 let _audioCtx=null;
@@ -325,9 +321,9 @@ const ARTIFACTS=[
 
 // ─ ドラフトフォールバックボーナス（ひらめきが全部MAX時） ─
 const FALLBACK_BONUSES=[
-  {id:'bonus_score',  emoji:'⭐', name:'スコアボーナス',
-   desc:()=>'スコア +5000！',
-   apply:()=>{ addScore(5000);floatEl('chain','⭐ スコア +5000！'); }},
+  {id:'bonus_gauge',  emoji:'💫', name:'ゲージフル充填',
+   desc:()=>'全おたすけアクション＆ハンマーゲージが+50%！',
+   apply:()=>{ Object.keys(activeSkills).forEach(k=>addSkillGauge(k,0.5));addPickaxeProgress(0.5);floatEl('chain','💫 全ゲージ +50%！'); }},
   {id:'bonus_hammer', emoji:'🔨', name:'ハンマーゲージ即MAX',
    desc:()=>'ハンマーゲージが即座に100%になる！',
    apply:()=>{ pickaxeGauge=1;updatePickaxeUI();floatEl('item','🔨 ハンマー MAX！'); }},
@@ -797,7 +793,7 @@ function newGame(){
   // ボードサイズを7×10固定
   COLS=BOARD_COLS;ROWS=BOARD_ROWS;
   grid=Array.from({length:ROWS},()=>Array(COLS).fill(0));
-  tiles={};uid=1;score=0;maxChain=0;waveCount=0;survivedDrops=0;resetWaveInterval();activeDropId=0;gameVersion++;busy=false;
+  tiles={};uid=1;maxChain=0;waveCount=0;survivedDrops=0;resetWaveInterval();activeDropId=0;gameVersion++;busy=false;
   // 新システムのリセット
   for(const k of Object.keys(activeSkills))activeSkills[k].gauge=0;
   pickaxeGauge=0;
@@ -807,7 +803,6 @@ function newGame(){
   updateAtmosphere();
   updateSkillSlotsUI();updatePickaxeUI();updateStageUI();updateHippoMeterUI();updateChikaraListUI();
   killCounts={1:0,2:0,3:0,4:0,5:0};totalDrops=0;updateLevelUI();
-  best=getBestScore();bestEl.textContent=best.toLocaleString()||0;
   current=rollTier();next=rollTier();
   // bgCellsをStage1の5×8でリビルド
   gridEl.innerHTML='';bgCells=[];
@@ -819,7 +814,7 @@ function newGame(){
   const lb=document.createElement('div');lb.className='danger-label';lb.id='dangerLabel';lb.textContent='⚠ DANGER';tilesEl.appendChild(lb);
   overlay.classList.remove('show','cleared');boardEl.classList.remove('close','shake');
   document.body.className='';
-  scoreEl.textContent='0';updateQueue();updateRiseCounter();
+  updateQueue();updateRiseCounter();
   requestAnimationFrame(()=>{const dl=document.getElementById('dangerLine'),lb=document.getElementById('dangerLabel');if(dl)dl.style.top=topOf(DANGER_ROW);if(lb)lb.style.top=topOf(DANGER_ROW);});
   MUSIC.stop();setTimeout(()=>MUSIC.start(),300);
 
@@ -845,14 +840,10 @@ function clearWithBonuses(targets/*[[r,c],...]*/, bgFlash=false){
     }
   }
   for(const[r,c]of targets)add(r,c);
-  // スコア計算（消した動物のtier分）
-  let pts=0;
-  for(const id of toClear)if(tiles[id]&&tiles[id].tier>0)pts+=SCORE_TABLE[tiles[id].tier]||0;
   // 消去前に座標を記録（tiles削除前）
   const clearedCells=[];
   for(const id of toClear){if(!tiles[id])continue;clearedCells.push({r:tiles[id].r,c:tiles[id].c,rock:!!tiles[id].rock});}
   for(const id of toClear){if(!tiles[id])continue;const{r,c}=tiles[id];grid[r][c]=0;removeFade(id);}
-  if(pts>0)addScore(pts);
 
   if(hippoRows.size>0){
     SFX.rowclear();burst();
@@ -915,7 +906,7 @@ async function resolveBoard(){
   while(true){
     const comps=findComponents();if(comps.length===0)break;
     chain++;const mult=Math.min(chain,MAX_CHAIN);
-    let waveScore=0,createdHippo=false,bigLeap=false,superLeap=false;
+    let createdHippo=false,bigLeap=false,superLeap=false;
     const removeSet=new Set(),survBumps=[];
     const hippoBirths=[]; // 今チェーンで誕生したカバ：{r,c}
     for(const cp of comps){
@@ -930,7 +921,6 @@ async function resolveBoard(){
         removeSet.add(cid);addKill(cp.tier);
       }
       survBumps.push({id:sid,tier:newTier});
-      waveScore+=SCORE_TABLE[newTier]+(size>=3?size*8:0);
       // ─ アクティブスキル獲得（4個同時=+2, 5個以上=+3 ボーナス） ─
       const chargeBonus=size>=5?3:size>=4?2:1;
       let skillKey=null;
@@ -962,7 +952,7 @@ async function resolveBoard(){
       if(tiles[b.id]?.pendingHippo)return; // カバは後で処理
       tiles[b.id].tier=b.tier;tiles[b.id].bump=true;
     });
-    render();addScore(waveScore*mult);
+    render();
     // ─ 通常エフェクト ─
     if(superLeap){floatEl('chain','⚡ 超進化！');SFX.bigmerge(4);burst();burst();shake();}
     else if(bigLeap){floatEl('chain','✨ 大進化！');SFX.bigmerge(3);burst();shake();}
@@ -1068,8 +1058,6 @@ async function riseStep(){
   await processDraftQueue();
 }
 
-// ─ スコア・エフェクト ─
-function addScore(add){if(add<=0)return;score+=add;scoreEl.textContent=score.toLocaleString();floatEl('pts','+'+add);if(score>best){best=score;bestEl.textContent=best.toLocaleString();}}
 // フローティングメッセージキュー（重なり防止）
 const _floatQueue=[];let _floatRunning=false;
 function floatEl(type,txt){
@@ -1090,14 +1078,12 @@ function burst(){const ico=['✨','💫','⭐','🦛'];for(let i=0;i<8;i++){cons
 
 
 function clearGame(){
-  const entry={score,maxChain,totalDrops,date:Date.now(),cleared:true};
+  const entry={stage:currentStage,maxChain,date:Date.now(),cleared:true};
   const history=saveHistory(entry);
-  const isNew=score>0&&score>=getBestScore();
-  if(isNew)best=score;bestEl.textContent=best.toLocaleString();
   document.getElementById('ovEmo').textContent='🎉';
   document.getElementById('ovTitle').textContent='生き残った！🏁';
-  document.getElementById('finscore').textContent=score.toLocaleString();
-  document.getElementById('finmsg').textContent=`Stage ${currentStage} ／ カバ${hippoMade}体作成 ／ 最大${maxChain}チェイン`+(isNew?' 🏆':'');
+  document.getElementById('finscore').textContent=currentStage;
+  document.getElementById('finmsg').textContent=`カバ${hippoMade}体作成 ／ 最大${maxChain}チェイン`;
   renderHistory(history);
   overlay.classList.add('show','cleared');
   boardEl.classList.remove('close');
@@ -1133,7 +1119,7 @@ function retryStage(){
   const lb=document.createElement('div');lb.className='danger-label';lb.id='dangerLabel';lb.textContent='⚠ DANGER';tilesEl.appendChild(lb);
   current=rollTier();next=rollTier();
   updateSkillSlotsUI();updatePickaxeUI();updateStageUI();updateHippoMeterUI();updateChikaraListUI();
-  scoreEl.textContent=score.toLocaleString();updateQueue();updateRiseCounter();
+  updateQueue();updateRiseCounter();
   requestAnimationFrame(()=>{const d=document.getElementById('dangerLine'),l=document.getElementById('dangerLabel');if(d)d.style.top=topOf(DANGER_ROW);if(l)l.style.top=topOf(DANGER_ROW);});
   MUSIC.stop();setTimeout(()=>MUSIC.start(),300);
   setupStage(currentStage);
@@ -1141,13 +1127,11 @@ function retryStage(){
 }
 
 function endGame(emo,title){
-  const entry={score,maxChain,date:Date.now()};
+  const entry={stage:currentStage,maxChain,date:Date.now()};
   const history=saveHistory(entry);
-  const isNew=score>0&&score>=getBestScore();
-  if(isNew)best=score;bestEl.textContent=best.toLocaleString();
   document.getElementById('ovEmo').textContent=emo;document.getElementById('ovTitle').textContent=title;
-  document.getElementById('finscore').textContent=score.toLocaleString();
-  document.getElementById('finmsg').textContent=isNew?'🎉 ハイスコア更新！やったね！':'ベスト '+best.toLocaleString()+' ／ 最大 '+maxChain+'チェイン';
+  document.getElementById('finscore').textContent=currentStage;
+  document.getElementById('finmsg').textContent=`最大${maxChain}チェイン ／ カバ${hippoMade}体`;
   renderHistory(history);
   MUSIC.stop();SFX.gameover();overlay.classList.add('show');boardEl.classList.remove('close');
   // ゲームオーバー用ボタン表示切替
@@ -1169,7 +1153,7 @@ document.getElementById('ovBtn').onclick=newGame;
 document.getElementById('retryStageBtn').onclick=retryStage;
 document.getElementById('clearOkBtn').onclick=newGame;
 document.getElementById('restart').onclick=newGame;
-document.getElementById('shareBtn').addEventListener('click',()=>{const txt=`🐹どうぶつポトン🦛\nスコア: ${score.toLocaleString()}点\n最大${maxChain}チェイン\n#どうぶつポトン`;if(navigator.share){navigator.share({text:txt}).catch(()=>{});}else{navigator.clipboard.writeText(txt).then(()=>{const b=document.getElementById('shareBtn');b.textContent='コピー済み✓';setTimeout(()=>{b.textContent='シェア📤';},2000);}).catch(()=>{});}});
+document.getElementById('shareBtn').addEventListener('click',()=>{const txt=`🐹どうぶつポトン🦛\nStage${currentStage}到達！\nカバ${hippoMade}体 ／ 最大${maxChain}チェイン\n#どうぶつポトン`;if(navigator.share){navigator.share({text:txt}).catch(()=>{});}else{navigator.clipboard.writeText(txt).then(()=>{const b=document.getElementById('shareBtn');b.textContent='コピー済み✓';setTimeout(()=>{b.textContent='シェア📤';},2000);}).catch(()=>{});}});
 function toggleHelp(){document.getElementById('helpPanel').classList.toggle('show');}
 try{newGame();}catch(e){window.onerror(e.message,'',0,0,e);}
 

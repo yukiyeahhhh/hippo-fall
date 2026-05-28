@@ -13,13 +13,7 @@
 <div class="wrap">
   <div class="top">
     <div class="title"><h1>どうぶつポトン</h1><div class="sub">🎲 ROGUELITE MODE</div></div>
-    <div style="display:flex;align-items:center;gap:6px;">
-      <div class="scores">
-        <div class="score"><div class="lab">SCORE</div><div class="val" id="score">0</div></div>
-        <div class="score"><div class="lab">BEST</div><div class="val" id="best">0</div></div>
-      </div>
-      <button class="help-btn" onclick="toggleHelp()" style="margin:0;padding:5px 8px;font-size:10px;">❓</button>
-    </div>
+    <button class="help-btn" onclick="toggleHelp()" style="margin:0;padding:5px 8px;font-size:10px;">❓</button>
   </div>
   <div class="queue">
     <div class="qpair">
@@ -47,7 +41,7 @@
       <div class="overlay" id="overlay">
         <div class="big" id="ovEmo">😵</div>
         <h2 id="ovTitle">ブロックがあふれちゃった…</h2>
-        <div class="fin">SCORE</div>
+        <div class="fin">到達ステージ</div>
         <div class="finscore" id="finscore">0</div>
         <div class="fin" id="finmsg"></div>
         <ol class="history-list" id="historyList" style="text-align:left;width:100%;"></ol>
@@ -112,7 +106,7 @@
     <div class="pickaxe-gauge-bg"><div class="pickaxe-gauge-fill" id="pickaxeFill"></div></div>
     <button class="pickaxe-btn" id="pickaxeBtn" onclick="usePickaxe()" disabled>使う</button>
   </div>
-  <div class="hint">列をタップして落とす 🫳　赤いラインを越えたら負け<br><b>同じ動物が2匹以上隣接で合体・進化</b></div>
+  <div class="hint">列をタップして落とす 🫳　赤いラインを越えたら負け　<b>コビトカバ🦛を作ってステージクリア！</b></div>
   <div class="controls"><button class="btn" id="restart">リスタート</button></div>
 </div>
 <div class="chikara-panel" id="chikaraPanel">
@@ -157,12 +151,15 @@
     </div>
     <div class="help-section">
       <h3>🦛 コビトカバのひらめき</h3>
-      <div class="help-rule-row"><span class="ri">🦛</span><span>コビトカバを1匹作るたびに、<b>新しいひらめきを選べるよ！</b>同じ能力を重ねて取るとレベルアップして強力に！</span></div>
-      <div class="help-item-row"><span class="ie">🔨</span><span class="in">思わぬ掘り出し物</span><span>ハンマー後、Lvに応じた動物が5〜8匹出現</span></div>
-      <div class="help-item-row"><span class="ie">♻️</span><span class="in">エコサイクル</span><span>おたすけアクション使用でハンマーゲージ+15%</span></div>
-      <div class="help-item-row"><span class="ie">🦦</span><span class="in">カワウソの恩返し</span><span>カワウソができたらおじゃまブロック1個破壊</span></div>
-      <div class="help-item-row"><span class="ie">🦛</span><span class="in">はりきりボーナス</span><span>4匹いっきに合体でおたすけアクションゲージ各+30%</span></div>
-      <div class="help-item-row"><span class="ie">🦆</span><span class="in">ひょっこりアヒル</span><span>せりあがりのたびに最上段の動物がアヒルに</span></div>
+      <div class="help-rule-row"><span class="ri">🦛</span><span>コビトカバを1匹作るたびに、<b>新しいひらめきを選べるよ！</b>同じ能力を重ねて取るとレベルアップして効果が強くなる！</span></div>
+      <div class="help-item-row"><span class="ie">🔨</span><span class="in">思わぬ掘り出し物</span><span>ハンマー後、Lvに応じた数の動物が出現</span></div>
+      <div class="help-item-row"><span class="ie">♻️</span><span class="in">エコサイクル</span><span>おたすけアクション使用でハンマーゲージ +15%×Lv</span></div>
+      <div class="help-item-row"><span class="ie">🦦</span><span class="in">カワウソの恩返し</span><span>カワウソができたらおじゃまブロック Lv個破壊</span></div>
+      <div class="help-item-row"><span class="ie">🦛</span><span class="in">はりきりボーナス</span><span>4匹いっきに合体でおたすけアクションゲージ各 +30%×Lv</span></div>
+      <div class="help-item-row"><span class="ie">🦆</span><span class="in">ひょっこりアヒル</span><span>せりあがりのたびに上から Lv匹の動物がアヒルに</span></div>
+      <div class="help-item-row"><span class="ie">🌰</span><span class="in">どんぐりのおすそわけ</span><span>ギリギリセーフ使用でハンマーゲージ +10%×Lv</span></div>
+      <div class="help-item-row"><span class="ie">🌪️</span><span class="in">おまけの竜巻</span><span>ぐるぐるシャッフル使用でおじゃまブロック Lv個破壊</span></div>
+      <div class="help-item-row"><span class="ie">🔗</span><span class="in">おたすけの連鎖</span><span>おたすけアクション使用で他の動物ゲージ +10%×Lv</span></div>
     </div>
     <div class="help-section">
       <h3>🌟 ステージ進行</h3>
