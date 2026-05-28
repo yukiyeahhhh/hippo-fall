@@ -343,9 +343,8 @@ function fireArtifactHook(hookName,...args){
 
 // ─ 波間隔の加速 ─
 function accelerateWave(){
-  const base=typeof _dpWaveInterval!=='undefined'?_dpWaveInterval:WAVE_INTERVAL;
-  currentWaveInterval=Math.max(WAVE_INTERVAL_MIN,currentWaveInterval-1);
-  // 既に現在の待機カウントが新しい間隔より大きければ上限を揃える
+  const floor=Math.min(WAVE_INTERVAL_MIN,_dpWaveInterval);
+  currentWaveInterval=Math.max(floor,currentWaveInterval-1);
   if(dropsUntilWave>currentWaveInterval)dropsUntilWave=currentWaveInterval;
   updateRiseCounter();
 }
