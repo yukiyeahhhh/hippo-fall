@@ -102,6 +102,7 @@ const SFX={
   itemHippo(lv){if(lv>=2){tone(40,'sawtooth',0.5,0.55);for(let i=0;i<6;i++)tone(220-i*25,'square',0.18,0.22,i*0.07);}else{tone(60,'sawtooth',0.35,0.42);for(let i=0;i<3;i++)tone(160-i*22,'square',0.13,0.18,0.05+i*0.07);}},
   rise(){tone(150,'sawtooth',0.09,0.16);tone(190,'sawtooth',0.07,0.13,0.1);},
   gameover(){[400,340,280,200].forEach((f,i)=>tone(f,'sawtooth',0.22,0.2,i*0.13));},
+  draft(){[0,1,2,3,4].forEach(i=>tone(520+i*140,'sine',0.10,0.13,i*0.058));tone(1100,'sine',0.13,0.25,0.32);},
   chain(n){for(let i=0;i<Math.min(n,5);i++)tone(280+i*110,'square',0.08,0.12,i*0.06);},
 };
 
@@ -290,7 +291,7 @@ const ARTIFACTS=[
    desc:(count)=>`カワウソができたとき、おじゃまブロックを${count}個壊す`,
    onMerge:(count,newTier)=>{ if(newTier===4)destroyRandomBlocks(count); }},
   {id:'harikiri_bonus', emoji:'🦛', name:'はりきりボーナス', maxLevel:5,
-   desc:(count)=>`4匹以上いっきに合体！おたすけゲージが各+${Math.round(30*count)}%`,
+   desc:(count)=>`4匹以上いっきに合体！おたすけアクションゲージが各+${Math.round(30*count)}%`,
    onBigMerge:(count,size)=>{
      if(size<4)return;
      addSkillGauge('squirrel',0.30*count);
@@ -301,7 +302,7 @@ const ARTIFACTS=[
    desc:(count)=>`せりあがりのとき、いちばん上の動物${count}匹がアヒルになる`,
    onWave:(count)=>{ convertTopToAhiru(count); }},
   {id:'donguri_share', emoji:'🌰', name:'どんぐりのおすそわけ', maxLevel:5,
-   desc:(count)=>`リスのスキルを使うと、ハンマーのゲージが${count*10}%回復する！`,
+   desc:(count)=>`リスのおたすけアクションを使うと、ハンマーのゲージが${count*10}%回復する！`,
    onSquirrelSkill:(count)=>{ addPickaxeProgress(0.10*count); floatEl('item','🌰 どんぐりのおすそわけ！ ハンマー+'+count*10+'%'); }},
   {id:'omake_tatsumaki', emoji:'🌪️', name:'おまけの竜巻', maxLevel:5,
    desc:(count)=>`ぐるぐるシャッフルを使うと、おじゃまブロックを${count}個壊す！`,
@@ -314,7 +315,7 @@ const ARTIFACTS=[
      if(toDestroy.length>0){render();floatEl('item','🌪️ おまけの竜巻！ ブロック×'+toDestroy.length+'破壊！');}
    }},
   {id:'otasuke_rensa', emoji:'🔗', name:'おたすけの連鎖', maxLevel:5,
-   desc:(count)=>`スキルを使うと、他の動物のゲージも+${count*10}%溜まる！`,
+   desc:(count)=>`おたすけアクションを使うと、他の動物のゲージも+${count*10}%溜まる！`,
    onAnySkill:(count,key)=>{
      const others=Object.keys(activeSkills).filter(k=>k!==key);
      others.forEach(k=>addSkillGauge(k,0.10*count));
@@ -331,8 +332,8 @@ const FALLBACK_BONUSES=[
    desc:()=>'ハンマーゲージが即座に100%になる！',
    apply:()=>{ pickaxeGauge=1;updatePickaxeUI();floatEl('item','🔨 ハンマー MAX！'); }},
   {id:'bonus_ahiru',  emoji:'🦆', name:'おたすけゲージ即MAX',
-   desc:()=>'アヒルとカワウソのおたすけゲージが即座に100%になる！',
-   apply:()=>{ for(const k of Object.keys(activeSkills))activeSkills[k].gauge=1;updateSkillSlotsUI();floatEl('item','🎁 おたすけ全部MAX！'); }},
+   desc:()=>'おたすけアクションゲージが全部即座に100%になる！',
+   apply:()=>{ for(const k of Object.keys(activeSkills))activeSkills[k].gauge=1;updateSkillSlotsUI();floatEl('item','🎁 おたすけアクション全部MAX！'); }},
 ];
 const ARTIFACTS_BY_ID=Object.fromEntries(ARTIFACTS.map(a=>[a.id,a]));
 
@@ -449,7 +450,7 @@ function activateSkill(key){
 
 // 🐿️ リスのギリギリセーフ：デンジャーライン直下2行のブロックを全破壊
 async function applySquirrelSave(){
-  await showCutin('リスのギリギリセーフ！','');
+  SFX.itemSquirrel();await showCutin('リスのギリギリセーフ！','');
   const toDestroy=[];
   for(let row=DANGER_ROW+1;row<=DANGER_ROW+2;row++){
     if(row>=ROWS)continue;
@@ -463,7 +464,7 @@ async function applySquirrelSave(){
 
 // 🦆 アヒルの大行進：ランダムな動物2〜3匹をアヒルに変換
 async function applyDuckMarch(){
-  await showCutin('アヒルの大行進！','');
+  SFX.itemDuck();await showCutin('アヒルの大行進！','');
   const candidates=[];
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
     const id=grid[r][c];
@@ -480,7 +481,7 @@ async function applyDuckMarch(){
 
 // 🦦 盤面リフレッシュ：ブロックはそのまま、動物の位置だけシャッフル
 async function applyBoardRefresh(){
-  await showCutin('ぐるぐるシャッフル！','');
+  SFX.itemOtter();await showCutin('ぐるぐるシャッフル！','');
   const positions=[],tiers=[];
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
     const id=grid[r][c];
@@ -534,7 +535,7 @@ async function usePickaxe(){
     pickaxeGauge=0;updatePickaxeUI();
     const rockIds=Object.keys(tiles).filter(id=>tiles[id]&&tiles[id].rock);
     if(rockIds.length===0){floatEl('toast','おじゃまブロックがないよ！');return;}
-    await showCutin('ハンマー発動！','');
+    SFX.itemOtter();await showCutin('ハンマー発動！','');
     let count=0;
     const positions=[];
     for(const id of rockIds){
@@ -621,7 +622,7 @@ async function processPendingHippos(){
   // pendingHippoフラグが立っているタイルを収集
   const pending=Object.keys(tiles).filter(id=>tiles[id]&&tiles[id].pendingHippo&&tiles[id].tier===MAX_TIER);
   if(pending.length===0)return;
-  await showCutin('コビトカバ誕生！','');
+  SFX.itemHippo(2);await showCutin('コビトカバ誕生！','');
   for(const id of pending){
     if(!tiles[id])continue;
     tiles[id].pendingHippo=false;
@@ -649,7 +650,7 @@ async function processDraftQueue(){
   while(pendingDraftCount>0){
     pendingDraftCount--;
     await sleep(200);
-    await showCutin('コビトカバのひらめき！','');
+    SFX.draft();await showCutin('コビトカバのひらめき！','');
     await showDraftModal();
     updateStageUI();
   }
@@ -977,7 +978,7 @@ async function resolveBoard(){
         if(el)el.classList.add('hippo-born');
       }
       render();
-      await showCutin('コビトカバ誕生！','');
+      SFX.itemHippo(2);await showCutin('コビトカバ誕生！','');
       floatEl('toast','🦛 コビトカバ誕生！');SFX.bigmerge(5);burst();burst();shake();
       await sleep(900); // 見せ場
       // IDで追跡して確実に削除
