@@ -256,7 +256,7 @@ function updateRiseCounter(){
   const base=typeof _dpWaveInterval!=='undefined'?_dpWaveInterval:WAVE_INTERVAL;
   const accel=currentWaveInterval<base; // 加速中かどうか
   const accelMark=accel?` ⚡${currentWaveInterval}手ごと`:'';
-  riseCountEl.textContent='⬆️ 次のせりあがりまで：あと'+Math.max(0,dropsUntilWave)+'手'+accelMark;
+  riseCountEl.textContent='🔺 次のせりあがりまで：あと'+Math.max(0,dropsUntilWave)+'手'+accelMark;
   riseCountEl.classList.toggle('warn',dropsUntilWave<=3);
 }
 function updateQueue(){cnowEl.textContent=ANIMALS[current].emo;cnextEl.textContent=ANIMALS[next].emo;}
@@ -1045,7 +1045,7 @@ async function doOneRise(){
 }
 async function riseStep(){
   waveCount++;updateAtmosphere();
-  SFX.rise();floatEl('warn','⬆️ ブロックがせりあがった！');await sleep(440);
+  SFX.rise();floatEl('warn','🔺 ブロックがせりあがった！');await sleep(440);
   await doOneRise();
   applyGravity();render();
   await sleep(200);

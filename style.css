@@ -32,8 +32,8 @@
   .tiles{position:absolute;inset:var(--gap);}
   .tile{position:absolute;border-radius:11px;transition:left .14s cubic-bezier(.3,.8,.4,1),top .19s cubic-bezier(.45,.05,.5,1);box-shadow:0 4px 0 rgba(0,0,0,.1),inset 0 2px 3px rgba(255,255,255,.5);}
   .tile .inner{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;}
-  .tile .emo{font-size:clamp(20px,6.5vw,30px);line-height:1;filter:drop-shadow(0 2px 1px rgba(0,0,0,.12));}
-  .tile .nm{font-size:8px;margin-top:1px;color:rgba(80,50,25,.65);font-weight:800;}
+  .tile .emo{font-size:clamp(22px,7vw,34px);line-height:1;filter:drop-shadow(0 2px 1px rgba(0,0,0,.12));}
+  .tile .nm{display:none;}
   .t1{background:#fbe2b3;} .t2{background:#f7c98a;} .t3{background:#ffe27a;} .t4{background:#cda079;} .t5{background:#e8a9b8;}
   .tile.rock{background:linear-gradient(160deg,#7a6a5a,#5a4a3a)!important;box-shadow:0 5px 0 rgba(0,0,0,.3),inset 0 2px 3px rgba(255,255,255,.15)!important;}
   .tile.rock .nm{color:rgba(255,255,255,.75);}
@@ -131,13 +131,13 @@
   .lv-side.lv-goal .lpf-v{background:linear-gradient(to top,#22c55e,#86efac);}
   .lv-side.lv-goal .lct{color:#1a8040;font-weight:800;}
   /* ゴール表示 */
-  .goal-row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.5);border-radius:10px;padding:2px 8px;margin-bottom:3px;font-size:11px;font-weight:800;}
-  .goal-row .goal-icon{font-size:14px;}
-  .goal-row .goal-label{color:var(--ink-soft);flex:1;}
+  .goal-row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.5);border-radius:10px;padding:3px 8px;margin-bottom:3px;font-size:11px;font-weight:800;}
+  .goal-row .goal-icon{font-size:22px;flex-shrink:0;}
+  .goal-row .goal-label{color:var(--ink-soft);flex:1;font-size:10px;}
   .goal-row .goal-label b{color:#1a8040;}
-  .goal-bar-bg{width:70px;height:7px;background:rgba(0,0,0,.1);border-radius:4px;overflow:hidden;flex-shrink:0;}
+  .goal-bar-bg{width:50px;height:7px;background:rgba(0,0,0,.1);border-radius:4px;overflow:hidden;flex-shrink:0;}
   .goal-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#86efac);border-radius:4px;transition:width .3s;}
-  .goal-count{color:#1a8040;min-width:30px;text-align:right;font-size:10px;}
+  .goal-count{font-size:15px;font-weight:800;color:#fff;background:#22c55e;border-radius:8px;padding:1px 8px;flex-shrink:0;}
   /* デバッグパネル */
   #debugPanel{position:fixed;bottom:8px;left:8px;background:rgba(0,0,0,.75);color:#fff;border-radius:10px;font-size:10px;font-family:monospace;z-index:100;line-height:1.8;}
   #debugToggle{cursor:pointer;padding:6px 10px;display:block;font-size:14px;text-align:center;}
