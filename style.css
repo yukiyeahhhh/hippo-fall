@@ -186,7 +186,7 @@
   .tile.hippo-born{animation:hippoborn .5s ease forwards;z-index:10;}
   .skill-slot-big .la-big{font-size:22px;line-height:1;}
   /* ピッケルゲージ＋ボタン */
-  .pickaxe-row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.55);border-radius:12px;padding:5px 12px;margin-bottom:3px;font-weight:800;}
+  .pickaxe-row{display:flex;align-items:center;gap:8px;background:#ffffffcc;border-radius:12px;padding:5px 12px;margin-bottom:3px;font-weight:800;position:relative;z-index:1;}
   .pickaxe-gauge-bg{flex:1;height:8px;background:rgba(0,0,0,.12);border-radius:4px;overflow:hidden;}
   .pickaxe-gauge-fill{height:100%;width:0%;background:linear-gradient(90deg,#8b5e3c,#d4956a);border-radius:4px;transition:width .3s;}
   .pickaxe-btn{background:#8b5e3c;color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:800;cursor:pointer;transition:opacity .2s;font-family:inherit;}
@@ -236,7 +236,7 @@
   .scbf{height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width .3s;}
   .skill-ready .scbf{background:#2ecc71;}
   /* hippoメーター */
-  .hippo-meter-row{display:flex;align-items:center;gap:7px;background:#fff5dc;border-radius:12px;padding:5px 12px;margin-bottom:3px;}
+  .hippo-meter-row{display:flex;align-items:center;gap:7px;background:#fff5dc;border-radius:12px;padding:5px 12px;margin-bottom:3px;position:relative;z-index:1;}
   .hm-bar-bg{flex:1;height:7px;background:rgba(0,0,0,.1);border-radius:4px;overflow:hidden;}
   .hm-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#f59e0b,#fde68a);border-radius:4px;transition:width .35s;}
   .hm-label{font-size:10px;font-weight:700;color:#92400e;white-space:nowrap;}
