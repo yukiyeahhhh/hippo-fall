@@ -488,7 +488,7 @@ async function applyDuckMarch(){
   const candidates=[];
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
     const id=grid[r][c];
-    if(id&&tiles[id]&&!tiles[id].rock&&tiles[id].tier!==3)candidates.push(id);
+    if(id&&tiles[id]&&!tiles[id].rock&&tiles[id].tier<3)candidates.push(id);
   }
   if(candidates.length===0){floatEl('toast','🦆 変換対象なし');return;}
   // シャッフルして2〜3匹選ぶ
