@@ -91,7 +91,7 @@ function tone(freq,type,dur,vol=0.28,t=0){const c=getCtx();if(!c)return;const o=
 
 // ─ SFX ─
 const SFX={
-  drop(){tone(100,'sine',0.07,0.18);},
+  drop(){tone(100,'sine',0.07,0.42);},
   merge(tier){tone(220+tier*55,'sine',0.13,0.22);tone(220+tier*55+35,'sine',0.08,0.13,0.07);},
   bigmerge(tier){for(let i=0;i<3;i++)tone(260+tier*70+i*45,'sine',0.11,0.18,i*0.07);},
   rowclear(){tone(80,'sawtooth',0.22,0.32);for(let i=0;i<4;i++)tone(110+i*80,'sine',0.14,0.18,0.06+i*0.07);},

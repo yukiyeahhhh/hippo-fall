@@ -121,10 +121,11 @@
 
   <audio id="titleBgm" src="assets/bgm/bgm01.mp3" loop preload="auto"></audio>
 
+  <button id="musicBtn" onclick="toggleTitleBgm()" style="position:fixed;bottom:32px;right:12px;background:rgba(255,255,255,.6);border:none;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;z-index:10;">🔇</button>
+
   <div class="footer">© どうぶつポトン</div>
 
 <script>
-  // 背景に落ちてくる動物をランダム生成
   const animals=['🐹','🐿️','🦆','🦦','🦛','🧱'];
   const bg=document.getElementById('bgFall');
   for(let i=0;i<14;i++){
@@ -138,16 +139,30 @@
   }
 
   const titleBgm=document.getElementById('titleBgm');
+  const musicBtn=document.getElementById('musicBtn');
   let bgmOff=false;
   try{const v=JSON.parse(localStorage.getItem('animalDrop_bgm_v1')||'{}');titleBgm.volume=v.vol??0.5;bgmOff=(v.sel==='off');}catch(e){}
 
-  let _bgmStarted=false;
-  function startTitleBgm(){
-    if(_bgmStarted||bgmOff)return;
-    titleBgm.play().then(()=>{_bgmStarted=true;}).catch(()=>{});
+  function updateMusicBtn(){musicBtn.textContent=titleBgm.paused?'🔇':'🎵';}
+
+  function playTitleBgm(){
+    if(bgmOff)return;
+    titleBgm.play().then(updateMusicBtn).catch(()=>{});
   }
-  document.addEventListener('touchstart',startTitleBgm);
-  document.addEventListener('click',startTitleBgm);
+
+  function toggleTitleBgm(){
+    if(titleBgm.paused){bgmOff=false;playTitleBgm();}
+    else{titleBgm.pause();bgmOff=true;updateMusicBtn();}
+  }
+
+  // 初回タップで自動再生を試みる
+  function onFirstInteraction(){
+    playTitleBgm();
+    document.removeEventListener('touchstart',onFirstInteraction);
+    document.removeEventListener('click',onFirstInteraction);
+  }
+  document.addEventListener('touchstart',onFirstInteraction);
+  document.addEventListener('click',onFirstInteraction);
 
   function onStart(){ location.href='game.html'; }
   function onHelp(){ location.href='game.html?help=1'; }
