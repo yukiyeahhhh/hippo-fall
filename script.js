@@ -223,7 +223,7 @@ const BGM=(()=>{
   function playMp3(id){
     const t=TRACKS.find(t=>t.id===id);if(!t||!t.src)return;
     if(playingId===id&&!audio.paused)return;
-    audio.pause();
+    // pauseせずsrcを変更：audio要素をplaying状態に保つことでiOS Safariのautoplay制限を回避
     audio.src=t.src;
     audio.volume=vol;
     audio.play().catch(()=>{});
@@ -673,7 +673,7 @@ function showDraftModal(){
     }
     if(picks.length===0){floatEl('toast','✨ ひらめきなし');resolve();return;}
     gamePaused=true;
-    MUSIC.pause();BGM.pause();
+    MUSIC.pause();
     updatePickaxeUI();
     const cardsEl=document.getElementById('draftCards');
     cardsEl.innerHTML=picks.map(a=>{const isFb=!!a._isFallback;const cnt=isFb?0:(artifactCounts[a.id]||0);const nextCnt=cnt+1;const badge=cnt>0?`<span class="dc-stack">×${cnt}</span>`:'';const descTxt=typeof a.desc==='function'?a.desc(nextCnt):a.desc;const maxBadge=(!isFb&&(a.maxLevel||5)===nextCnt)?`<span class="dc-stack" style="background:#7c3aed">MAX!</span>`:'';return`<div class="draft-card" data-id="${a.id}"><div class="dc-emo">${a.emoji}</div><div class="dc-body"><div class="dc-name">${a.name}${badge}${maxBadge}</div><div class="dc-desc">${descTxt}</div></div></div>`;}).join('');
@@ -690,7 +690,7 @@ function showDraftModal(){
         const a=ARTIFACTS_BY_ID[id]||FALLBACK_BONUSES.find(f=>f.id===id);
         document.getElementById('draftOverlay').classList.remove('show');
         gamePaused=false;
-        MUSIC.resumeFromPause();BGM.resumeFromPause();
+        MUSIC.resumeFromPause();
         updatePickaxeUI();
         if(!fb)floatEl('item',a.emoji+' '+a.name+' 獲得！');
         SFX.itemSpawn();
@@ -748,7 +748,7 @@ async function processDraftQueue(){
 // ─ ステージクリア演出＆次ステージへ ─
 async function showStageClearAndAdvance(){
   gamePaused=true;
-  MUSIC.pause();BGM.pause();
+  MUSIC.pause();
   await sleep(200);
   // ステージクリア演出
   const f=document.createElement('div');
@@ -791,7 +791,7 @@ async function showStageClearAndAdvance(){
   await sleep(1200);
   g.remove();
   gamePaused=false;
-  MUSIC.resumeFromPause();BGM.onStageChange(currentStage);BGM.resumeFromPause();
+  BGM.onStageChange(currentStage);MUSIC.resumeFromPause();
   updatePickaxeUI();
 }
 
@@ -906,7 +906,7 @@ function newGame(){
   document.body.className='';
   updateQueue();updateRiseCounter();
   requestAnimationFrame(()=>{const dl=document.getElementById('dangerLine'),lb=document.getElementById('dangerLabel');if(dl)dl.style.top=topOf(DANGER_ROW);if(lb)lb.style.top=topOf(DANGER_ROW);});
-  setTimeout(()=>BGM.start(currentStage),300);
+  BGM.start(currentStage);
 
 }
 
@@ -1217,7 +1217,7 @@ function retryStage(){
   updateSkillSlotsUI();updatePickaxeUI();updateStageUI();updateHippoMeterUI();updateChikaraListUI();
   updateQueue();updateRiseCounter();
   requestAnimationFrame(()=>{const d=document.getElementById('dangerLine'),l=document.getElementById('dangerLabel');if(d)d.style.top=topOf(DANGER_ROW);if(l)l.style.top=topOf(DANGER_ROW);});
-  setTimeout(()=>BGM.start(currentStage),300);
+  BGM.start(currentStage);
   setupStage(currentStage);
   floatEl('toast','🔄 ステージ '+currentStage+' やり直し！');
 }
