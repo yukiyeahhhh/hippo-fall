@@ -204,11 +204,12 @@ const BGM=(()=>{
     {id:'off',     label:'🔇 BGMオフ',                         src:null},
   ];
   function stageToId(stage){
-    if(stage<=2)return 'bgm02';
-    if(stage<=4)return 'bgm03';
-    if(stage<=6)return 'bgm04';
-    if(stage<=8)return 'bgm05';
-    return 'bgm06';
+    if(stage<=1)return 'bgm02';
+    if(stage<=2)return 'bgm03';
+    if(stage<=3)return 'bgm04';
+    if(stage<=4)return 'bgm05';
+    if(stage<=5)return 'bgm06';
+    return 'bgm06'; // エンドレス
   }
   const LS_BGM='animalDrop_bgm_v1';
   let sel='auto';
