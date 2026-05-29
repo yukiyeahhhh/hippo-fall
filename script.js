@@ -91,7 +91,7 @@ function tone(freq,type,dur,vol=0.28,t=0){const c=getCtx();if(!c)return;const o=
 
 // ─ SFX ─
 const SFX={
-  drop(){tone(100,'sine',0.07,0.42);},
+  drop(){tone(100,'sine',0.07,0.72);},
   merge(tier){tone(220+tier*55,'sine',0.13,0.22);tone(220+tier*55+35,'sine',0.08,0.13,0.07);},
   bigmerge(tier){for(let i=0;i<3;i++)tone(260+tier*70+i*45,'sine',0.11,0.18,i*0.07);},
   rowclear(){tone(80,'sawtooth',0.22,0.32);for(let i=0;i<4;i++)tone(110+i*80,'sine',0.14,0.18,0.06+i*0.07);},
@@ -197,18 +197,19 @@ const BGM=(()=>{
     {id:'bgm01',   label:'01 Slow Morning at the Glade',       src:'assets/bgm/bgm01.mp3'},
     {id:'bgm02',   label:'02 The Window Seat',                  src:'assets/bgm/bgm02.mp3'},
     {id:'bgm03',   label:'03 The Copper Pendulum',              src:'assets/bgm/bgm03.mp3'},
-    {id:'bgm04',   label:'04 Midday at the Village Square（タイトル用）', src:'assets/bgm/bgm04.mp3'},
+    {id:'bgm04',   label:'04 Midday at the Village Square',      src:'assets/bgm/bgm04.mp3'},
     {id:'bgm05',   label:'05 Under the Twilit Pines',           src:'assets/bgm/bgm05.mp3'},
     {id:'bgm06',   label:'06 Where the Tea Steeped',            src:'assets/bgm/bgm06.mp3'},
-    {id:'dew',     label:'🌼 Dew on the Marigolds',             src:'assets/bgm/dew.mp3'},
+    {id:'dew',     label:'🌼 Dew on the Marigolds（タイトル用）', src:'assets/bgm/dew.mp3'},
     {id:'off',     label:'🔇 BGMオフ',                         src:null},
   ];
   function stageToId(stage){
     if(stage<=1)return 'bgm01';
     if(stage<=2)return 'bgm02';
     if(stage<=3)return 'bgm03';
-    if(stage<=4)return 'bgm05';
-    return 'bgm06'; // stage 5 + エンドレス
+    if(stage<=4)return 'bgm04';
+    if(stage<=5)return 'bgm05';
+    return 'bgm06'; // エンドレス
   }
   const LS_BGM='animalDrop_bgm_v1';
   let sel='auto';
