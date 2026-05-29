@@ -236,7 +236,7 @@
   .scbf{height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width .3s;}
   .skill-ready .scbf{background:#2ecc71;}
   /* hippoメーター */
-  .hippo-meter-row{display:flex;align-items:center;gap:7px;background:rgba(255,245,220,.75);border-radius:12px;padding:5px 12px;margin-bottom:3px;}
+  .hippo-meter-row{display:flex;align-items:center;gap:7px;background:#fff5dc;border-radius:12px;padding:5px 12px;margin-bottom:3px;}
   .hm-bar-bg{flex:1;height:7px;background:rgba(0,0,0,.1);border-radius:4px;overflow:hidden;}
   .hm-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#f59e0b,#fde68a);border-radius:4px;transition:width .35s;}
   .hm-label{font-size:10px;font-weight:700;color:#92400e;white-space:nowrap;}
