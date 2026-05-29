@@ -154,6 +154,9 @@
   .goal-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#86efac);border-radius:4px;transition:width .3s;}
   .goal-count{font-size:15px;font-weight:800;color:#fff;background:#22c55e;border-radius:8px;padding:1px 8px;flex-shrink:0;}
   /* デバッグパネル */
+  #musicPanel{position:fixed;top:44px;right:8px;background:rgba(255,248,235,.97);color:var(--ink);border-radius:14px;padding:12px 14px;z-index:100;display:none;max-width:calc(100vw - 16px);max-height:80dvh;overflow-y:auto;box-shadow:0 8px 24px rgba(120,70,30,.22);min-width:240px;}
+  .bgm-track-btn{width:100%;text-align:left;font-family:inherit;font-size:11px;font-weight:700;padding:6px 10px;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,.6);cursor:pointer;transition:border-color .15s,background .15s;}
+  .bgm-track-btn.active{border-color:var(--accent);background:rgba(255,200,120,.25);}
   #debugPanel{position:fixed;top:44px;right:8px;background:rgba(0,0,0,.75);color:#fff;border-radius:10px;font-size:10px;font-family:monospace;z-index:100;line-height:1.8;display:none;max-width:calc(100vw - 16px);max-height:80dvh;overflow-y:auto;}
   #debugBody{padding:8px 10px;}
   #debugPanel b{color:#ffc400;display:block;margin-bottom:2px;}

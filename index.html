@@ -137,6 +137,22 @@
 
   function onStart(){ location.href='game.html'; }
   function onHelp(){ location.href='game.html?help=1'; }
+
+  // タイトルBGM（初回タップで再生）
+  let titleAudio=null;
+  function startTitleBgm(){
+    if(titleAudio)return;
+    try{
+      const s=JSON.parse(localStorage.getItem('animalDrop_bgm_v1')||'{}');
+      if(s.sel==='off')return;
+    }catch(e){}
+    titleAudio=new Audio('assets/bgm/bgm01.mp3');
+    titleAudio.loop=true;
+    try{const v=JSON.parse(localStorage.getItem('animalDrop_bgm_v1')||'{}');titleAudio.volume=v.vol??0.5;}catch(e){titleAudio.volume=0.5;}
+    titleAudio.play().catch(()=>{});
+  }
+  document.addEventListener('click',startTitleBgm,{once:true});
+  document.addEventListener('touchstart',startTitleBgm,{once:true});
 </script>
 </body>
 </html>

@@ -188,6 +188,63 @@ const MUSIC=(()=>{
   };
 })();
 
+// ─ BGM（MP3ファイル再生） ─
+const BGM=(()=>{
+  const TRACKS=[
+    {id:'auto',    label:'🔄 ステージ連動',          src:null},
+    {id:'original',label:'🎹 オリジナル（合成音）',   src:null},
+    {id:'bgm01',   label:'01 Slow Morning at the Glade',       src:'assets/bgm/bgm01.mp3'},
+    {id:'bgm02',   label:'02 The Window Seat',                  src:'assets/bgm/bgm02.mp3'},
+    {id:'bgm03',   label:'03 The Copper Pendulum',              src:'assets/bgm/bgm03.mp3'},
+    {id:'bgm04',   label:'04 Midday at the Village Square',     src:'assets/bgm/bgm04.mp3'},
+    {id:'bgm05',   label:'05 Under the Twilit Pines',           src:'assets/bgm/bgm05.mp3'},
+    {id:'bgm06',   label:'06 Where the Tea Steeped',            src:'assets/bgm/bgm06.mp3'},
+    {id:'dew',     label:'🌼 Dew on the Marigolds',             src:'assets/bgm/dew.mp3'},
+    {id:'off',     label:'🔇 BGMオフ',                         src:null},
+  ];
+  function stageToId(stage){
+    if(stage<=2)return 'bgm02';
+    if(stage<=4)return 'bgm03';
+    if(stage<=6)return 'bgm04';
+    if(stage<=8)return 'bgm05';
+    return 'bgm06';
+  }
+  const LS_BGM='animalDrop_bgm_v1';
+  let sel='auto';
+  let vol=0.5;
+  let audio=null;
+  let playingId=null;
+  try{const s=JSON.parse(localStorage.getItem(LS_BGM)||'{}');sel=s.sel||'auto';vol=s.vol??0.5;}catch(e){}
+  function save(){try{localStorage.setItem(LS_BGM,JSON.stringify({sel,vol}));}catch(e){}}
+  function stopAudio(){if(audio){audio.pause();audio.src='';audio=null;}playingId=null;}
+  function playMp3(id){
+    const t=TRACKS.find(t=>t.id===id);if(!t||!t.src)return;
+    if(playingId===id&&audio&&!audio.paused)return;
+    stopAudio();
+    audio=new Audio(t.src);
+    audio.loop=true;audio.volume=vol;
+    audio.play().catch(()=>{});
+    playingId=id;
+  }
+  function applyNow(stage){
+    const effectiveId=(sel==='auto')?stageToId(stage??currentStage??1):sel;
+    if(effectiveId==='off'){stopAudio();MUSIC.stop();return;}
+    if(effectiveId==='original'){stopAudio();MUSIC.start();return;}
+    MUSIC.stop();playMp3(effectiveId);
+  }
+  return{
+    tracks:TRACKS,
+    getSel(){return sel;},
+    getVol(){return vol;},
+    setSel(id,stage){sel=id;save();applyNow(stage);},
+    setVol(v){vol=v;save();if(audio)audio.volume=vol;},
+    onStageChange(stage){if(sel==='auto')applyNow(stage);},
+    start(stage){applyNow(stage);},
+    stop(){stopAudio();MUSIC.stop();},
+    pause(){if(audio)audio.pause();},
+    resumeFromPause(){if(audio)audio.play().catch(()=>{});},
+  };
+})();
 
 // ── killカウント ──
 function addKill(tier){
@@ -611,7 +668,7 @@ function showDraftModal(){
     }
     if(picks.length===0){floatEl('toast','✨ ひらめきなし');resolve();return;}
     gamePaused=true;
-    MUSIC.pause();
+    MUSIC.pause();BGM.pause();
     updatePickaxeUI();
     const cardsEl=document.getElementById('draftCards');
     cardsEl.innerHTML=picks.map(a=>{const isFb=!!a._isFallback;const cnt=isFb?0:(artifactCounts[a.id]||0);const nextCnt=cnt+1;const badge=cnt>0?`<span class="dc-stack">×${cnt}</span>`:'';const descTxt=typeof a.desc==='function'?a.desc(nextCnt):a.desc;const maxBadge=(!isFb&&(a.maxLevel||5)===nextCnt)?`<span class="dc-stack" style="background:#7c3aed">MAX!</span>`:'';return`<div class="draft-card" data-id="${a.id}"><div class="dc-emo">${a.emoji}</div><div class="dc-body"><div class="dc-name">${a.name}${badge}${maxBadge}</div><div class="dc-desc">${descTxt}</div></div></div>`;}).join('');
@@ -628,7 +685,7 @@ function showDraftModal(){
         const a=ARTIFACTS_BY_ID[id]||FALLBACK_BONUSES.find(f=>f.id===id);
         document.getElementById('draftOverlay').classList.remove('show');
         gamePaused=false;
-        MUSIC.resumeFromPause();
+        MUSIC.resumeFromPause();BGM.resumeFromPause();
         updatePickaxeUI();
         if(!fb)floatEl('item',a.emoji+' '+a.name+' 獲得！');
         SFX.itemSpawn();
@@ -686,7 +743,7 @@ async function processDraftQueue(){
 // ─ ステージクリア演出＆次ステージへ ─
 async function showStageClearAndAdvance(){
   gamePaused=true;
-  MUSIC.pause();
+  MUSIC.pause();BGM.pause();
   await sleep(200);
   // ステージクリア演出
   const f=document.createElement('div');
@@ -729,7 +786,7 @@ async function showStageClearAndAdvance(){
   await sleep(1200);
   g.remove();
   gamePaused=false;
-  MUSIC.resumeFromPause();
+  MUSIC.resumeFromPause();BGM.onStageChange(currentStage);BGM.resumeFromPause();
   updatePickaxeUI();
 }
 
@@ -844,7 +901,7 @@ function newGame(){
   document.body.className='';
   updateQueue();updateRiseCounter();
   requestAnimationFrame(()=>{const dl=document.getElementById('dangerLine'),lb=document.getElementById('dangerLabel');if(dl)dl.style.top=topOf(DANGER_ROW);if(lb)lb.style.top=topOf(DANGER_ROW);});
-  MUSIC.stop();setTimeout(()=>MUSIC.start(),300);
+  setTimeout(()=>BGM.start(currentStage),300);
 
 }
 
@@ -1124,7 +1181,7 @@ function clearGame(){
   // クリア用ボタン表示切替
   const rb=document.getElementById('retryBtns');if(rb)rb.style.display='none';
   const cb=document.getElementById('clearOkBtn');if(cb)cb.style.display='block';
-  MUSIC.stop();burst();burst();burst();shake();
+  BGM.start(currentStage);burst();burst();burst();shake();
 }
 // ─ このステージからやり直す ─
 function retryStage(){
@@ -1155,7 +1212,7 @@ function retryStage(){
   updateSkillSlotsUI();updatePickaxeUI();updateStageUI();updateHippoMeterUI();updateChikaraListUI();
   updateQueue();updateRiseCounter();
   requestAnimationFrame(()=>{const d=document.getElementById('dangerLine'),l=document.getElementById('dangerLabel');if(d)d.style.top=topOf(DANGER_ROW);if(l)l.style.top=topOf(DANGER_ROW);});
-  MUSIC.stop();setTimeout(()=>MUSIC.start(),300);
+  setTimeout(()=>BGM.start(currentStage),300);
   setupStage(currentStage);
   floatEl('toast','🔄 ステージ '+currentStage+' やり直し！');
 }
@@ -1167,7 +1224,7 @@ function endGame(emo,title){
   document.getElementById('finscore').textContent=currentStage;
   document.getElementById('finmsg').textContent=`最大${maxChain}チェイン ／ カバ${hippoMade}体`;
   renderHistory(history);
-  MUSIC.stop();SFX.gameover();overlay.classList.add('show');boardEl.classList.remove('close');
+  BGM.stop();SFX.gameover();overlay.classList.add('show');boardEl.classList.remove('close');
   // ゲームオーバー用ボタン表示切替
   const rb=document.getElementById('retryBtns');if(rb)rb.style.display='flex';
   const cb=document.getElementById('clearOkBtn');if(cb)cb.style.display='none';
@@ -1176,7 +1233,7 @@ function endGame(emo,title){
 // ─ 入力 ─
 function cellFromXY(cx,cy){const rect=boardEl.getBoundingClientRect(),pad=parseFloat(getComputedStyle(boardEl).paddingLeft),iW=rect.width-2*pad,iH=rect.height-2*pad;return{col:Math.max(0,Math.min(COLS-1,Math.floor((cx-rect.left-pad)/iW*COLS))),row:Math.max(0,Math.min(ROWS-1,Math.floor((cy-rect.top-pad)/iH*ROWS)))};}
 boardEl.addEventListener('click',e=>{
-  MUSIC.resume();
+  BGM.start(currentStage);
   if(overlay.classList.contains('show')||gamePaused)return;
   const{col}=cellFromXY(e.clientX,e.clientY);
   if(!busy)drop(col);
@@ -1199,6 +1256,28 @@ function toggleHelp(){
   const open=p.classList.toggle('show');
   if(open)history.pushState({modal:'help'},'');
 }
+function renderBgmPanel(){
+  const list=document.getElementById('bgmTrackList');if(!list)return;
+  const sel=BGM.getSel();
+  list.innerHTML='';
+  BGM.tracks.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='bgm-track-btn'+(t.id===sel?' active':'');
+    b.textContent=t.label;
+    b.onclick=()=>{BGM.setSel(t.id,currentStage);renderBgmPanel();};
+    list.appendChild(b);
+  });
+  const slider=document.getElementById('bgmVolSlider');
+  const label=document.getElementById('bgmVolLabel');
+  if(slider){slider.value=Math.round(BGM.getVol()*100);label.textContent=slider.value+'%';}
+}
+function onBgmVol(v){BGM.setVol(v/100);document.getElementById('bgmVolLabel').textContent=v+'%';}
+function toggleMusic(){
+  const p=document.getElementById('musicPanel');
+  const open=p.style.display!=='block';
+  p.style.display=open?'block':'none';
+  if(open){history.pushState({modal:'music'},'');renderBgmPanel();}
+}
 function toggleDebug(){
   const p=document.getElementById('debugPanel');
   const open=p.style.display!=='block';
@@ -1207,6 +1286,8 @@ function toggleDebug(){
 }
 // スマホ戻るボタン：開いているモーダルを閉じる。何も開いていなければタイトル確認
 window.addEventListener('popstate',()=>{
+  const mp=document.getElementById('musicPanel');
+  if(mp?.style.display==='block'){mp.style.display='none';return;}
   const dp=document.getElementById('debugPanel');
   if(dp?.style.display==='block'){dp.style.display='none';return;}
   const panels=['chikaraPanel','logPanel','helpPanel'];

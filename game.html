@@ -18,6 +18,7 @@
     <div style="display:flex;gap:4px;">
       <button class="help-btn" onclick="showTitleModal()" style="margin:0;padding:5px 8px;font-size:10px;">🏠</button>
       <button class="help-btn" id="restart" onclick="showRestartModal()" style="margin:0;padding:5px 8px;font-size:10px;">↺</button>
+      <button class="help-btn" onclick="toggleMusic()" style="margin:0;padding:5px 8px;font-size:10px;">🎵</button>
       <button class="help-btn" onclick="toggleDebug()" style="margin:0;padding:5px 8px;font-size:10px;">⚙️</button>
       <button class="help-btn" onclick="toggleHelp()" style="margin:0;padding:5px 8px;font-size:10px;">❓</button>
     </div>
@@ -219,6 +220,16 @@
       <div class="hc-row"><span class="hc-emo">♾️</span><span>STAGE 6以降：エンドレス！ステージごとに難しくなるよ</span></div>
     </div>
   </div>
+</div>
+<div id="musicPanel">
+  <div style="font-weight:800;font-size:12px;margin-bottom:8px;">🎵 BGM設定</div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+    <span style="font-size:11px;font-weight:700;">音量</span>
+    <input type="range" id="bgmVolSlider" min="0" max="100" value="50" style="flex:1;" oninput="onBgmVol(this.value)">
+    <span id="bgmVolLabel" style="font-size:11px;width:28px;text-align:right;">50%</span>
+  </div>
+  <div style="font-size:11px;font-weight:700;margin-bottom:5px;">曲を選ぶ</div>
+  <div id="bgmTrackList" style="display:flex;flex-direction:column;gap:4px;"></div>
 </div>
 <div id="debugPanel">
   <div id="debugBody">
