@@ -86,7 +86,8 @@ function renderHistory(h){const el=document.getElementById('historyList');if(!el
 // ─ 共有 AudioContext ─
 let _audioCtx=null;
 function getCtx(){if(!_audioCtx)try{_audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}if(_audioCtx&&_audioCtx.state==='suspended')_audioCtx.resume();return _audioCtx;}
-function tone(freq,type,dur,vol=0.28,t=0){const c=getCtx();if(!c)return;const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(vol,c.currentTime+t);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+t+dur);o.connect(g);g.connect(c.destination);o.start(c.currentTime+t);o.stop(c.currentTime+t+dur+0.05);}
+let _sfxVol=1.5;
+function tone(freq,type,dur,vol=0.28,t=0){const c=getCtx();if(!c)return;const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=freq;const v=Math.min(vol*_sfxVol,2.0);g.gain.setValueAtTime(v,c.currentTime+t);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+t+dur);o.connect(g);g.connect(c.destination);o.start(c.currentTime+t);o.stop(c.currentTime+t+dur+0.05);}
 
 // ─ SFX ─
 const SFX={
@@ -214,8 +215,8 @@ const BGM=(()=>{
   let vol=0.5;
   let audio=null;
   let playingId=null;
-  try{const s=JSON.parse(localStorage.getItem(LS_BGM)||'{}');sel=s.sel||'auto';vol=s.vol??0.5;}catch(e){}
-  function save(){try{localStorage.setItem(LS_BGM,JSON.stringify({sel,vol}));}catch(e){}}
+  try{const s=JSON.parse(localStorage.getItem(LS_BGM)||'{}');sel=s.sel||'auto';vol=s.vol??0.5;_sfxVol=s.sfxVol??1.5;}catch(e){}
+  function save(){try{localStorage.setItem(LS_BGM,JSON.stringify({sel,vol,sfxVol:_sfxVol}));}catch(e){}}
   function stopAudio(){if(audio){audio.pause();audio.src='';audio=null;}playingId=null;}
   function playMp3(id){
     const t=TRACKS.find(t=>t.id===id);if(!t||!t.src)return;
@@ -236,8 +237,10 @@ const BGM=(()=>{
     tracks:TRACKS,
     getSel(){return sel;},
     getVol(){return vol;},
+    getSfxVol(){return _sfxVol;},
     setSel(id,stage){sel=id;save();applyNow(stage);},
     setVol(v){vol=v;save();if(audio)audio.volume=vol;},
+    setSfxVol(v){_sfxVol=v;save();},
     onStageChange(stage){if(sel==='auto')applyNow(stage);},
     start(stage){applyNow(stage);},
     stop(){stopAudio();MUSIC.stop();},
@@ -1267,11 +1270,13 @@ function renderBgmPanel(){
     b.onclick=()=>{BGM.setSel(t.id,currentStage);renderBgmPanel();};
     list.appendChild(b);
   });
-  const slider=document.getElementById('bgmVolSlider');
-  const label=document.getElementById('bgmVolLabel');
-  if(slider){slider.value=Math.round(BGM.getVol()*100);label.textContent=slider.value+'%';}
+  const bs=document.getElementById('bgmVolSlider'),bl=document.getElementById('bgmVolLabel');
+  if(bs){bs.value=Math.round(BGM.getVol()*100);bl.textContent=bs.value+'%';}
+  const ss=document.getElementById('sfxVolSlider'),sl=document.getElementById('sfxVolLabel');
+  if(ss){ss.value=Math.round(BGM.getSfxVol()*100);sl.textContent=ss.value+'%';}
 }
 function onBgmVol(v){BGM.setVol(v/100);document.getElementById('bgmVolLabel').textContent=v+'%';}
+function onSfxVol(v){BGM.setSfxVol(v/100);document.getElementById('sfxVolLabel').textContent=v+'%';}
 function toggleMusic(){
   const p=document.getElementById('musicPanel');
   const open=p.style.display!=='block';
