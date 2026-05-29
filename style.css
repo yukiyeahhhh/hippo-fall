@@ -25,7 +25,7 @@
   .risecount.warn{color:var(--danger);background:rgba(224,54,74,.12);}
   .help-btn{background:rgba(255,255,255,.6);color:var(--ink-soft);border:none;border-radius:9px;font-family:inherit;font-weight:800;font-size:11px;padding:4px 10px;cursor:pointer;align-self:center;margin-bottom:6px;}
   .board-wrap{display:flex;justify-content:center;flex:1;}
-  .board{position:relative;width:100%;max-height:calc(100dvh - 215px);aspect-ratio:5/8;background:var(--board);border-radius:18px;padding:var(--gap);box-shadow:0 14px 30px -12px rgba(120,70,30,.45),inset 0 2px 4px rgba(255,255,255,.4);cursor:pointer;}
+  .board{position:relative;width:100%;max-height:calc(100dvh - 215px);aspect-ratio:5/8;background:var(--board);border-radius:18px;padding:var(--gap);box-shadow:0 14px 30px -12px rgba(120,70,30,.45),inset 0 2px 4px rgba(255,255,255,.4);cursor:pointer;overflow:hidden;}
   .grid{position:absolute;inset:var(--gap);display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(8,1fr);gap:var(--gap);}
   .grid .bg{background:var(--cell);border-radius:11px;transition:background .1s;}
   .grid .bg.aim{background:#f1d4ab;} .grid .bg.dz0{background:rgba(224,54,74,.22);} .grid .bg.dz1{background:rgba(224,54,74,.1);}
