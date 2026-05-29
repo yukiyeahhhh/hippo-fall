@@ -9,7 +9,6 @@ let COLS=5,ROWS=8;
 const DANGER_ROW=1;
 const WAVE_INTERVAL=10;     // 波の初期間隔（手数）
 let _dpWaveInterval=10,_dpBlockRate=0.35; // デバッグパネル用パラメータ
-const WAVE_INTERVAL_MIN=5;  // 波の最小間隔（カバ作成で加速、この値より短くならない）
 
 // ─ ステージ設定（盤面常に7×10固定） ─
 const BOARD_COLS=7,BOARD_ROWS=10; // 全ステージ共通
@@ -41,7 +40,7 @@ let totalDrops=0;
 let waveCount=0; // これまでに来た波の回数
 let survivedDrops=0; // 生き残った手数
 let dropsUntilWave=10; // 次の波までの手数
-let currentWaveInterval=10; // 現在の波間隔（カバ作成で短縮される）
+let currentWaveInterval=10; // 現在の波間隔
 const LS_LOG_KEY='animalDrop_gamelog_v1';
 function loadGameLog(){try{return JSON.parse(localStorage.getItem(LS_LOG_KEY)||'[]');}catch(e){return[];}}
 function saveGameLog(){try{localStorage.setItem(LS_LOG_KEY,JSON.stringify(gameLog));}catch(e){}}
@@ -49,26 +48,14 @@ const gameLog=loadGameLog();
 
 // ─ アクティブスキル（進化で獲得・盤面外スロット） ─
 const SKILL_GAUGE_PER_EVOLVE=1/3; // 進化1回でゲージが33%溜まる（3回で100%）
-let HIPPO_PER_DRAFT=1;      // ドラフト1回に必要なカバ作成数（1→2→3と増加）
 let activeSkills={
   squirrel:   {emoji:'🐿️', name:'ギリギリセーフ', gauge:0, fromTier:2},
   duck_march: {emoji:'🦆', name:'大行進',         gauge:0, fromTier:3},
   refresh:    {emoji:'🦦', name:'ぐるぐるシャッフル', gauge:0, fromTier:4}
 };
 
-// ─ ピッケル ─
-let pickaxeGauge=0;       // 0〜1（次のストックまでの進捗）
-const PICKAXE_MERGE_GAIN=0.04;   // 合体1回ごとの蓄積
-const PICKAXE_CHAIN_GAIN=0.04;   // チェーン1段ごとのボーナス係数（chain*chain*0.04）
-const PICKAXE_WAVE_GAIN=0.30;    // 波1回やり過ごすたびに
-
-// ─ コビトカバのチカラ＆ステージ進行 ─
-let artifactCounts={};  // {id: 取得回数} スタック式
-let gamePaused=false;   // ドラフトモーダル表示中フラグ
-let pendingDraftCount=0; // ドラフトキュー
-let hippoMeter=0;        // カバ作成数カウンター（HIPPO_PER_DRAFTでドラフト）
-let totalHippoMade=0;    // ゲーム通算カバ作成数（ドラフト回数の算出に使用）
-let nextForceDuck=false; // 次のドロップを強制アヒルにするフラグ
+// ─ ステージ進行 ─
+let gamePaused=false;   // カットイン等の演出中フラグ
 // ─ ステージ ─
 let currentStage=1;
 let hippoMade=0;     // 現ステージで作ったカバ数
@@ -282,15 +269,6 @@ function getStageGoal(stage){
 }
 // updateLevelUI互換シム（既存呼び出し対応用）
 function updateLevelUI(){updateStageUI();}
-function updateChikaraListUI(){
-  const panel=document.getElementById('chikaraPanel');
-  if(panel&&panel.classList.contains('show'))renderChikaraPanel();
-}
-function toggleChikaraPanel(){
-  const p=document.getElementById('chikaraPanel');if(!p)return;
-  const show=p.classList.toggle('show');
-  if(show){history.pushState({modal:'chikara'},'');renderChikaraPanel();}
-}
 function toggleLogPanel(){
   const p=document.getElementById('logPanel');if(!p)return;
   const show=p.classList.toggle('show');
@@ -313,142 +291,25 @@ function renderLogPanel(){
     el.appendChild(row);
   }
 }
-function renderChikaraPanel(){
-  const el=document.getElementById('chikaraPanelList');if(!el)return;
-  const entries=Object.entries(artifactCounts);
-  if(entries.length===0){
-    el.innerHTML='<div class="chikara-panel-empty">まだひらめきがないよ✨<br><span style="font-size:11px;font-weight:700;">コビトカバを作ると選べるよ！</span></div>';
-    return;
-  }
-  el.innerHTML=entries.map(([id,count])=>{
-    const a=ARTIFACTS_BY_ID[id];if(!a)return'';
-    const descTxt=typeof a.desc==='function'?a.desc(count):a.desc;
-    return`<div class="cdi-item"><div class="cdi-head"><span class="cdi-emo">${a.emoji}</span><span class="cdi-name">${a.name}</span><span class="cdi-lv">Lv.${count}</span></div><div class="cdi-desc">${descTxt}</div></div>`;
-  }).join('');
-}
-function updateHippoMeterUI(){
-  const fill=document.getElementById('hmFill');
-  const lbl=document.getElementById('hmLabel');
-  if(fill)fill.style.width=Math.min(100,hippoMeter/HIPPO_PER_DRAFT*100)+'%';
-  if(lbl)lbl.textContent='コビトカバがひらめくまで：あと'+Math.max(0,HIPPO_PER_DRAFT-hippoMeter)+'匹';
-}
 function getTotalKills(){return Object.values(killCounts).reduce((a,b)=>a+b,0);}
 function getWaveRows(){return 1;} // 常に1段固定
 function getRockChance(){
   return typeof _dpBlockRate!=='undefined'?_dpBlockRate:0.35;
 }
-function rollTier(){if(nextForceDuck){nextForceDuck=false;return 3;}const r=Math.random()*100;return r<70?1:r<95?2:3;} // ハム70%、リス25%、アヒル5%、カワウソ0%
+function rollTier(){const r=Math.random()*100;return r<70?1:r<95?2:3;} // ハム70%、リス25%、アヒル5%、カワウソ0%
 function rollRiseTier(){const r=Math.random();return r<.45?1:r<.73?2:r<.89?3:4;} // フラット
 function updateAtmosphere(){document.body.className=currentStage>TOTAL_STAGES?'endless':currentStage>1?'s'+currentStage:'';}
 function updateRiseCounter(){
-  const base=typeof _dpWaveInterval!=='undefined'?_dpWaveInterval:WAVE_INTERVAL;
-  const accel=currentWaveInterval<base; // 加速中かどうか
-  const accelMark=accel?` ⚡${currentWaveInterval}手ごと`:'';
-  riseCountEl.textContent='🔺 次のせりあがりまで：あと'+Math.max(0,dropsUntilWave)+'手'+accelMark;
+  riseCountEl.textContent='🔺 次のせりあがりまで：あと'+Math.max(0,dropsUntilWave)+'手';
   riseCountEl.classList.toggle('warn',dropsUntilWave<=3);
 }
 function updateQueue(){cnowEl.textContent=ANIMALS[current].emo;cnextEl.textContent=ANIMALS[next].emo;}
 
-// ─ コビトカバのチカラ 一覧（スタック式） ─
-const ARTIFACTS=[
-  {id:'kouzan', emoji:'🔨', name:'思わぬ掘り出し物', maxLevel:4,
-   desc:(count)=>{
-     const n=5+Math.min(count-1,3); // Lv1=5, Lv2=6, Lv3=7, Lv4+=8
-     const tier=Math.min(count,4);  // Lv1=ハム, Lv2=リス, Lv3=アヒル, Lv4+=カワウソ
-     const emo=['','🐹','🐿️','🦆','🦦'][tier];
-     return `ハンマー後、${emo}が${n}匹でてきた！`;
-   },
-   onPickaxe:(count,positions)=>{
-     const n=5+Math.min(count-1,3);
-     const tier=Math.min(count,4);
-     const emo=['','🐹','🐿️','🦆','🦦'][tier];
-     let placed=0;
-     const spawnFn=(r,c)=>{if(grid[r][c])return;const id=uid++;const t={id,tier,r,c,spawn:true};tiles[id]=t;grid[r][c]=id;paint(t);};
-     for(const[r,c]of positions){if(placed>=n)break;if(!grid[r][c]){spawnFn(r,c);placed++;}}
-     for(let rr=ROWS-1;rr>=0&&placed<n;rr--)for(let cc=0;cc<COLS&&placed<n;cc++){if(!grid[rr][cc]){spawnFn(rr,cc);placed++;}}
-     if(placed>0)floatEl('item',`🔨 思わぬ掘り出し物！ ${emo}×${placed}`);
-   }},
-  {id:'eco_cycle', emoji:'♻️', name:'エコサイクル', maxLevel:5,
-   desc:(count)=>`おたすけアクション使用時、ハンマーゲージ +${Math.round(15*count)}%`,
-   onActiveSkill:(count)=>{ addPickaxeProgress(0.15*count); }},
-  {id:'kawuso_ongaeshi', emoji:'🦦', name:'カワウソの恩返し', maxLevel:5,
-   desc:(count)=>`カワウソができたとき、おじゃまブロックを${count}個壊す`,
-   onMerge:(count,newTier)=>{ if(newTier===4)destroyRandomBlocks(count); }},
-  {id:'harikiri_bonus', emoji:'🦛', name:'はりきりボーナス', maxLevel:5,
-   desc:(count)=>`4匹以上いっきに合体！おたすけアクションゲージが各+${Math.round(30*count)}%`,
-   onBigMerge:(count,size)=>{
-     if(size<4)return;
-     addSkillGauge('squirrel',0.30*count);
-     addSkillGauge('duck_march',0.30*count);
-     addSkillGauge('refresh',0.30*count);
-   }},
-  {id:'naminori_ahiru', emoji:'🦆', name:'ひょっこりアヒル', maxLevel:5,
-   desc:(count)=>`せりあがりのとき、いちばん上の動物${count}匹がアヒルになる`,
-   onWave:(count)=>{ convertTopToAhiru(count); }},
-  {id:'donguri_share', emoji:'🌰', name:'どんぐりのおすそわけ', maxLevel:5,
-   desc:(count)=>`リスのおたすけアクションを使うと、ハンマーのゲージが${count*10}%回復する！`,
-   onSquirrelSkill:(count)=>{ addPickaxeProgress(0.10*count); floatEl('item','🌰 どんぐりのおすそわけ！ ハンマー+'+count*10+'%'); }},
-  {id:'omake_tatsumaki', emoji:'🌪️', name:'おまけの竜巻', maxLevel:5,
-   desc:(count)=>`ぐるぐるシャッフルを使うと、おじゃまブロックを${count}個壊す！`,
-   onRefreshSkill:(count)=>{
-     const rockIds=Object.keys(tiles).filter(id=>tiles[id]&&tiles[id].rock);
-     if(rockIds.length===0)return;
-     for(let i=rockIds.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[rockIds[i],rockIds[j]]=[rockIds[j],rockIds[i]];}
-     const toDestroy=rockIds.slice(0,Math.min(count,rockIds.length));
-     for(const id of toDestroy){if(!tiles[id])continue;const{r,c}=tiles[id];grid[r][c]=0;removeFade(id);fireArtifactHook('onRockBreak',r,c);}
-     if(toDestroy.length>0){render();floatEl('item','🌪️ おまけの竜巻！ ブロック×'+toDestroy.length+'破壊！');}
-   }},
-  {id:'otasuke_rensa', emoji:'🔗', name:'おたすけの連鎖', maxLevel:5,
-   desc:(count)=>`おたすけアクションを使うと、他の動物のゲージも+${count*10}%溜まる！`,
-   onAnySkill:(count,key)=>{
-     const others=Object.keys(activeSkills).filter(k=>k!==key);
-     others.forEach(k=>addSkillGauge(k,0.10*count));
-     floatEl('item','🔗 おたすけの連鎖！ 他ゲージ+'+count*10+'%');
-   }},
-];
-
-// ─ ドラフトフォールバックボーナス（ひらめきが全部MAX時） ─
-const FALLBACK_BONUSES=[
-  {id:'bonus_gauge',  emoji:'💫', name:'ゲージフル充填',
-   desc:()=>'全おたすけアクション＆ハンマーゲージが+50%！',
-   apply:()=>{ Object.keys(activeSkills).forEach(k=>addSkillGauge(k,0.5));addPickaxeProgress(0.5);floatEl('chain','💫 全ゲージ +50%！'); }},
-  {id:'bonus_hammer', emoji:'🔨', name:'ハンマーゲージ即MAX',
-   desc:()=>'ハンマーゲージが即座に100%になる！',
-   apply:()=>{ pickaxeGauge=1;updatePickaxeUI();floatEl('item','🔨 ハンマー MAX！'); }},
-  {id:'bonus_ahiru',  emoji:'🦆', name:'おたすけゲージ即MAX',
-   desc:()=>'おたすけアクションゲージが全部即座に100%になる！',
-   apply:()=>{ for(const k of Object.keys(activeSkills))activeSkills[k].gauge=1;updateSkillSlotsUI();floatEl('item','🎁 おたすけアクション全部MAX！'); }},
-];
-const ARTIFACTS_BY_ID=Object.fromEntries(ARTIFACTS.map(a=>[a.id,a]));
-
-// チカラフック：count（取得回数）を第1引数として渡す
-function fireArtifactHook(hookName,...args){
-  for(const[id,count]of Object.entries(artifactCounts)){
-    const a=ARTIFACTS_BY_ID[id];
-    if(a&&typeof a[hookName]==='function')a[hookName](count,...args);
-  }
-}
-
-// ─ 波間隔の加速 ─
-function accelerateWave(){
-  const floor=Math.min(WAVE_INTERVAL_MIN,_dpWaveInterval);
-  currentWaveInterval=Math.max(floor,currentWaveInterval-1);
-  if(dropsUntilWave>currentWaveInterval)dropsUntilWave=currentWaveInterval;
-  updateRiseCounter();
-}
+// ─ 波間隔 ─
 function resetWaveInterval(){
   const base=typeof _dpWaveInterval!=='undefined'?_dpWaveInterval:WAVE_INTERVAL;
   currentWaveInterval=base;
   dropsUntilWave=base;
-}
-
-// ─ ピッケルゲージ操作（ヘルパ） ─
-function addPickaxeProgress(amount){
-  if(pickaxeGauge>=1)return; // 満タン時はオーバーフローしない
-  const prev=pickaxeGauge;
-  pickaxeGauge=Math.min(1,pickaxeGauge+amount);
-  if(prev<1&&pickaxeGauge>=1)floatEl('item','🔨 ハンマー MAX！');
-  updatePickaxeUI();
 }
 
 // ─ アクティブスキル操作（ヘルパ） ─
@@ -477,20 +338,12 @@ function updateSkillSlotsUI(){
     el.classList.toggle('skill-ready',ready);
   }
 }
-function updatePickaxeUI(){
-  const fill=document.getElementById('pickaxeFill');
-  const btn=document.getElementById('pickaxeBtn');
-  if(fill)fill.style.width=(pickaxeGauge*100)+'%';
-  if(btn)btn.disabled=pickaxeGauge<1||gamePaused;
-}
 // ─ カットイン演出（基盤） ─
 const CUTIN_IMAGES={
   'リスのギリギリセーフ！': 'assets/cutin_squirrel.webp',
   'アヒルの大行進！':      'assets/cutin_duck_march.webp',
   'ぐるぐるシャッフル！':  'assets/cutin_refresh.webp',
   'コビトカバ誕生！':      'assets/cutin_hippo_born.webp',
-  'コビトカバのひらめき！':'assets/cutin_draft.webp',
-  'ハンマー発動！':        'assets/cutin_hammer.webp',
 };
 (()=>{Object.values(CUTIN_IMAGES).forEach(src=>{const i=new Image();i.src=src;});})();
 async function showCutin(title, message, duration=2200){
@@ -515,17 +368,15 @@ function activateSkill(key){
   const s=activeSkills[key];if(!s||s.gauge<1)return;
   s.gauge=0;
   updateSkillSlotsUI();
-  fireArtifactHook('onActiveSkill');
   busy=true;
   (async()=>{
     try{
-      if(key==='squirrel'){await applySquirrelSave();fireArtifactHook('onSquirrelSkill');}
+      if(key==='squirrel')await applySquirrelSave();
       else if(key==='duck_march')await applyDuckMarch();
-      else if(key==='refresh'){await applyBoardRefresh();fireArtifactHook('onRefreshSkill');}
-      fireArtifactHook('onAnySkill',key);
+      else if(key==='refresh')await applyBoardRefresh();
       applyGravity();render();await sleep(200);
       await resolveBoard();
-      await processDraftQueue();
+      await checkStageClear();
       if(isDanger()){endGame('💥','ブロックがあふれちゃった…');return;}
       checkClose();
     }finally{busy=false;}
@@ -542,7 +393,7 @@ async function applySquirrelSave(){
     for(let c=0;c<COLS;c++){const id=grid[row][c];if(id&&tiles[id]&&tiles[id].rock)toDestroy.push(id);}
   }
   if(toDestroy.length===0){floatEl('toast','🐿️ ピンチなし！');return;}
-  for(const id of toDestroy){if(!tiles[id])continue;const{r,c}=tiles[id];grid[r][c]=0;removeFade(id);fireArtifactHook('onRockBreak',r,c);}
+  for(const id of toDestroy){if(!tiles[id])continue;const{r,c}=tiles[id];grid[r][c]=0;removeFade(id);}
   render();floatEl('item','🐿️ リスのギリギリセーフ！ ブロック×'+toDestroy.length+'破壊！');
   await sleep(500);
 }
@@ -580,126 +431,12 @@ async function applyBoardRefresh(){
   await sleep(700);
 }
 
-// ⚡ 落雷：ランダムにN個のブロックを破壊
-function destroyRandomBlocks(n){
-  const rockIds=Object.keys(tiles).filter(id=>tiles[id]&&tiles[id].rock);
-  if(rockIds.length===0)return;
-  for(let i=rockIds.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[rockIds[i],rockIds[j]]=[rockIds[j],rockIds[i]];}
-  const toDestroy=rockIds.slice(0,Math.min(n,rockIds.length));
-  for(const id of toDestroy){
-    if(!tiles[id])continue;
-    const{r,c}=tiles[id];
-    grid[r][c]=0;removeFade(id);
-    fireArtifactHook('onRockBreak',r,c);
-  }
-  if(toDestroy.length>0){render();floatEl('item','🦦 カワウソの恩返し！ ブロック×'+toDestroy.length+'破壊！');}
-}
-
-// 🌊 波乗り：各列の最上段の動物をN匹まで1段進化
-function convertTopToAhiru(n){
-  // 最上段（rowが最小）にいる動物をN匹アヒル(tier3)に変換
-  const candidates=[];
-  for(let c=0;c<COLS;c++){
-    for(let r=0;r<ROWS;r++){
-      const id=grid[r][c];
-      if(id&&tiles[id]&&!tiles[id].rock&&tiles[id].tier!==3){
-        candidates.push({id,r});break;
-      }
-    }
-  }
-  candidates.sort((a,b)=>a.r-b.r);
-  const toConvert=candidates.slice(0,Math.min(n,candidates.length));
-  for(const{id}of toConvert){tiles[id].tier=3;tiles[id].skillHit=true;}
-  if(toConvert.length>0){render();floatEl('item','🦆 ひょっこりアヒル！ '+toConvert.length+'匹→🦆');}
-}
-// ─ ピッケル発動 ─
-async function usePickaxe(){
-  if(pickaxeGauge<1||busy||gamePaused)return;
-  busy=true;
-  try{
-    pickaxeGauge=0;updatePickaxeUI();
-    const rockIds=Object.keys(tiles).filter(id=>tiles[id]&&tiles[id].rock);
-    if(rockIds.length===0){floatEl('toast','おじゃまブロックがないよ！');return;}
-    SFX.itemOtter();await showCutin('ハンマー発動！','');
-    let count=0;
-    const positions=[];
-    for(const id of rockIds){
-      if(!tiles[id])continue;
-      const{r,c}=tiles[id];
-      positions.push([r,c]);
-      grid[r][c]=0;removeFade(id);count++;
-    }
-    SFX.itemOtter();floatEl('item','🔨 ハンマー発動！ おじゃまブロック×'+count);burst();burst();shake();
-    // onPickaxeフック（鉱山の奇跡など）
-    fireArtifactHook('onPickaxe',positions);
-    await sleep(220);applyGravity();render();await sleep(200);
-    await resolveBoard();
-    await processDraftQueue();
-    if(isDanger()){endGame('💥','ブロックがあふれちゃった…');return;}
-    checkClose();
-  }finally{busy=false;}
-}
-
 // ─ 発破職人：ブロック跡地にハムスタースポーン ─
 function spawnHamsterAt(r,c){
   if(grid[r][c])return; // 既に何かあれば諦める
   const id=uid++;
   const t={id,tier:1,r,c,spawn:true};
   tiles[id]=t;grid[r][c]=id;paint(t);
-}
-
-// ─ ドラフトモーダル（Promise化） ─
-function showDraftModal(){
-  return new Promise(resolve=>{
-    // maxLevelに達していない能力のみ抽選対象
-    const pool=ARTIFACTS.filter(a=>{
-      const lv=artifactCounts[a.id]||0;
-      return lv<(a.maxLevel||5);
-    });
-    // プールが空またはカード3枚未満ならフォールバックで補充
-    const picks=[];const usedIdx=new Set();
-    if(pool.length>0){
-      while(picks.length<Math.min(3,pool.length)){
-        const i=Math.floor(Math.random()*pool.length);
-        if(usedIdx.has(i))continue;
-        usedIdx.add(i);picks.push(pool[i]);
-      }
-    }
-    if(picks.length<3){
-      // フォールバックボーナスで補充
-      const fbPool=[...FALLBACK_BONUSES];
-      for(let i=fbPool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[fbPool[i],fbPool[j]]=[fbPool[j],fbPool[i]];}
-      for(const fb of fbPool){if(picks.length>=3)break;picks.push({...fb,_isFallback:true});}
-    }
-    if(picks.length===0){floatEl('toast','✨ ひらめきなし');resolve();return;}
-    gamePaused=true;
-    MUSIC.pause();
-    updatePickaxeUI();
-    const cardsEl=document.getElementById('draftCards');
-    cardsEl.innerHTML=picks.map(a=>{const isFb=!!a._isFallback;const cnt=isFb?0:(artifactCounts[a.id]||0);const nextCnt=cnt+1;const badge=cnt>0?`<span class="dc-stack">×${cnt}</span>`:'';const descTxt=typeof a.desc==='function'?a.desc(nextCnt):a.desc;const maxBadge=(!isFb&&(a.maxLevel||5)===nextCnt)?`<span class="dc-stack" style="background:#7c3aed">MAX!</span>`:'';return`<div class="draft-card" data-id="${a.id}"><div class="dc-emo">${a.emoji}</div><div class="dc-body"><div class="dc-name">${a.name}${badge}${maxBadge}</div><div class="dc-desc">${descTxt}</div></div></div>`;}).join('');
-    cardsEl.querySelectorAll('.draft-card').forEach(card=>{
-      card.addEventListener('click',()=>{
-        const id=card.dataset.id;
-        // フォールバックボーナスは artifactCounts に積まない
-        const fb=FALLBACK_BONUSES.find(f=>f.id===id);
-        if(fb){
-          if(typeof fb.apply==='function')fb.apply();
-        }else{
-          artifactCounts[id]=(artifactCounts[id]||0)+1;
-        }
-        const a=ARTIFACTS_BY_ID[id]||FALLBACK_BONUSES.find(f=>f.id===id);
-        document.getElementById('draftOverlay').classList.remove('show');
-        gamePaused=false;
-        MUSIC.resumeFromPause();
-        updatePickaxeUI();
-        if(!fb)floatEl('item',a.emoji+' '+a.name+' 獲得！');
-        SFX.itemSpawn();
-        updateChikaraListUI();
-        resolve();
-      },{once:true});
-    });
-    document.getElementById('draftOverlay').classList.add('show');
-  });
 }
 
 // ─ resolveBoard外でカバになったタイルを演出付きで処理 ─
@@ -723,23 +460,13 @@ async function processPendingHippos(){
     for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){if(grid[r][c]===Number(id))grid[r][c]=0;}
     removeFade(Number(id));
     hippoMade++;
-    accelerateWave(); // カバ1匹ごとに波間隔を短縮
-    totalHippoMade++;hippoMeter++;if(hippoMeter>=HIPPO_PER_DRAFT){hippoMeter=0;HIPPO_PER_DRAFT=Math.min(3,HIPPO_PER_DRAFT+1);pendingDraftCount++;}
-    updateHippoMeterUI();updateStageUI();
+    updateStageUI();
   }
   applyGravity();render();
 }
 
-// ─ ドラフトキュー処理：保留分を順番に発火、終わったらステージクリア判定 ─
-async function processDraftQueue(){
-  while(pendingDraftCount>0){
-    pendingDraftCount--;
-    await sleep(200);
-    SFX.draft();await showCutin('コビトカバのひらめき！','');
-    await showDraftModal();
-    updateStageUI();
-  }
-  // ステージクリア判定：エンドレス中（TOTAL_STAGES超過）は進行しない
+// ─ ステージクリア判定：エンドレス中（TOTAL_STAGES超過）は進行しない ─
+async function checkStageClear(){
   if(currentStage<=TOTAL_STAGES && hippoMade>=hippoGoal){
     await showStageClearAndAdvance();
   }
@@ -770,8 +497,7 @@ async function showStageClearAndAdvance(){
     gc.remove();
   }
 
-  // ─ アイテム・ゲージのリセット（スキル溜め防止） ─
-  pickaxeGauge=0;
+  // ─ スキルゲージのリセット（溜め防止） ─
   for(const k of Object.keys(activeSkills))activeSkills[k].gauge=0;
 
   // 次ステージへ移行
@@ -780,7 +506,7 @@ async function showStageClearAndAdvance(){
   hippoGoal=getStageGoal(currentStage);
   setupStage(currentStage);
   updateAtmosphere();
-  updateStageUI();updatePickaxeUI();updateSkillSlotsUI();updateHippoMeterUI();
+  updateStageUI();updateSkillSlotsUI();
 
   // ステージ開始演出
   const g=document.createElement('div');
@@ -792,7 +518,6 @@ async function showStageClearAndAdvance(){
   g.remove();
   gamePaused=false;
   BGM.onStageChange(currentStage);MUSIC.resumeFromPause();
-  updatePickaxeUI();
 }
 
 // ─ ボードサイズ動的変更 ─
@@ -884,14 +609,12 @@ function newGame(){
   grid=Array.from({length:ROWS},()=>Array(COLS).fill(0));
   tiles={};uid=1;maxChain=0;waveCount=0;survivedDrops=0;resetWaveInterval();activeDropId=0;gameVersion++;busy=false;
   gameLog.length=0;saveGameLog();pushLog('stage','🏁 ゲームスタート');
-  // 新システムのリセット
+  // スキル・進行のリセット
   for(const k of Object.keys(activeSkills))activeSkills[k].gauge=0;
-  pickaxeGauge=0;
-  artifactCounts={};gamePaused=false;pendingDraftCount=0;
-  hippoMeter=0;totalHippoMade=0;HIPPO_PER_DRAFT=1;nextForceDuck=false;
+  gamePaused=false;
   currentStage=1;hippoMade=0;hippoGoal=getStageGoal(1);
   updateAtmosphere();
-  updateSkillSlotsUI();updatePickaxeUI();updateStageUI();updateHippoMeterUI();updateChikaraListUI();
+  updateSkillSlotsUI();updateStageUI();
   killCounts={1:0,2:0,3:0,4:0,5:0};totalDrops=0;updateLevelUI();
   current=rollTier();next=rollTier();
   // bgCellsをStage1の5×8でリビルド
@@ -1011,21 +734,12 @@ async function resolveBoard(){
         removeSet.add(cid);addKill(cp.tier);
       }
       survBumps.push({id:sid,tier:newTier});
-      // ─ アクティブスキル獲得（4個同時=+2, 5個以上=+3 ボーナス） ─
-      const chargeBonus=size>=5?3:size>=4?2:1;
+      // ─ アクティブスキル獲得（進化1回ぶん） ─
       let skillKey=null;
       if(newTier===2)skillKey='squirrel';
       else if(newTier===3)skillKey='duck_march';
       else if(newTier===4)skillKey='refresh';
-      if(skillKey){
-        for(let i=0;i<chargeBonus;i++)addActiveSkill(skillKey);
-      }
-      // ─ ピッケル微蓄積（合体1回ごと） ─
-      addPickaxeProgress(PICKAXE_MERGE_GAIN);
-      // ─ 大量同時消し（4個以上）でonBigMergeフック ─
-      if(size>=4)fireArtifactHook('onBigMerge',size);
-      // ─ onMergeフック ─
-      fireArtifactHook('onMerge',newTier);
+      if(skillKey)addActiveSkill(skillKey);
       // カバ誕生：IDフラグで管理して演出後に確実削除
       if(newTier===MAX_TIER&&prev<MAX_TIER){
         createdHippo=true;
@@ -1070,15 +784,10 @@ async function resolveBoard(){
         for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){if(grid[r][c]===sid)grid[r][c]=0;}
         removeFade(sid);
         hippoMade++;
-        accelerateWave(); // カバ1匹ごとに波間隔を短縮
-        totalHippoMade++;hippoMeter++;if(hippoMeter>=HIPPO_PER_DRAFT){hippoMeter=0;HIPPO_PER_DRAFT=Math.min(3,HIPPO_PER_DRAFT+1);pendingDraftCount++;}
-        updateHippoMeterUI();updateStageUI();
+        updateStageUI();
       }
       render();
     }
-    // ─ チェーンボーナス（ピッケル＆onChainフック） ─
-    addPickaxeProgress(chain*chain*PICKAXE_CHAIN_GAIN);
-    fireArtifactHook('onChain',chain);
     maxChain=Math.max(maxChain,chain);
     updateStageUI();
     await sleep(160);applyGravity();render();await sleep(225);
@@ -1097,15 +806,14 @@ async function drop(col){
     t.r=landR;grid[landR][col]=id;paint(t);SFX.drop();await sleep(200);if(gameVersion!==gv)return;
     await resolveBoard();if(gameVersion!==gv)return;
     activeDropId=0;
-    // ─ カバ誕生で溜まったドラフトをキュー処理 ─
-    await processDraftQueue();if(gameVersion!==gv)return;
+    await checkStageClear();if(gameVersion!==gv)return;
     if(isDanger()){endGame('💥','ブロックがあふれちゃった…');return;}
     const wasClose=Object.values(tiles).some(t=>t.r<=DANGER_ROW);
     checkClose();
     totalDrops++;survivedDrops++;dropsUntilWave--;
     // 波判定
     if(dropsUntilWave<=0){
-      dropsUntilWave=currentWaveInterval; // 加速済みの間隔でリセット
+      dropsUntilWave=currentWaveInterval;
       await riseStep();if(gameVersion!==gv)return;
       if(isDanger()||emptyCount()===0){endGame('💥','ブロックがあふれちゃった…');return;}
       checkClose();
@@ -1140,10 +848,9 @@ async function riseStep(){
   applyGravity();render();
   await sleep(200);
   await resolveBoard();
-  fireArtifactHook('onWave');
-  // 波乗り等でpendingHippoになったタイルを演出処理
+  // 波後にpendingHippoになったタイルを演出処理
   await processPendingHippos();
-  await processDraftQueue();
+  await checkStageClear();
 }
 
 // ─ ゲームログ ─
@@ -1198,11 +905,9 @@ function retryStage(){
   grid=Array.from({length:ROWS},()=>Array(COLS).fill(0));
   tiles={};uid=1;activeDropId=0;
   waveCount=0;survivedDrops=0;resetWaveInterval(); // やり直し時は波間隔もリセット
-  // ゲージ・スキルはリセット
-  pickaxeGauge=0;
+  // スキルゲージはリセット
   for(const k of Object.keys(activeSkills))activeSkills[k].gauge=0;
-  pendingDraftCount=0;hippoMeter=0;nextForceDuck=false;
-  // ステージ進捗はリセット（ステージ番号・ひらめき・スコアは維持）
+  // ステージ進捗はリセット（ステージ番号・スコアは維持）
   hippoMade=0;hippoGoal=getStageGoal(currentStage);
   gamePaused=false;
   // bgCellsを再構築（COLS/ROWSは維持）
@@ -1214,7 +919,7 @@ function retryStage(){
   const dl=document.createElement('div');dl.className='danger-line';dl.id='dangerLine';tilesEl.appendChild(dl);
   const lb=document.createElement('div');lb.className='danger-label';lb.id='dangerLabel';lb.textContent='⚠ DANGER';tilesEl.appendChild(lb);
   current=rollTier();next=rollTier();
-  updateSkillSlotsUI();updatePickaxeUI();updateStageUI();updateHippoMeterUI();updateChikaraListUI();
+  updateSkillSlotsUI();updateStageUI();
   updateQueue();updateRiseCounter();
   requestAnimationFrame(()=>{const d=document.getElementById('dangerLine'),l=document.getElementById('dangerLabel');if(d)d.style.top=topOf(DANGER_ROW);if(l)l.style.top=topOf(DANGER_ROW);});
   BGM.start(currentStage);
@@ -1297,7 +1002,7 @@ window.addEventListener('popstate',()=>{
   if(mp?.style.display==='block'){mp.style.display='none';return;}
   const dp=document.getElementById('debugPanel');
   if(dp?.style.display==='block'){dp.style.display='none';return;}
-  const panels=['chikaraPanel','logPanel','helpPanel'];
+  const panels=['logPanel','helpPanel'];
   for(const id of panels){const el=document.getElementById(id);if(el?.classList.contains('show')){el.classList.remove('show');return;}}
   if(document.getElementById('restartModal')?.classList.contains('show')){hideRestartModal();return;}
   if(document.getElementById('titleModal')?.classList.contains('show')){hideTitleModal();return;}
@@ -1316,18 +1021,6 @@ window.addEventListener('beforeunload',e=>{
 });
 
 // ─ デバッグパネル ─
-function debugAddArtifacts(n){
-  const pool=ARTIFACTS.filter(a=>(artifactCounts[a.id]||0)<(a.maxLevel||5));
-  if(pool.length===0){floatEl('toast','ひらめき全部MAX！');return;}
-  for(let i=0;i<n;i++){
-    const eligible=ARTIFACTS.filter(a=>(artifactCounts[a.id]||0)<(a.maxLevel||5));
-    if(eligible.length===0)break;
-    const a=eligible[Math.floor(Math.random()*eligible.length)];
-    artifactCounts[a.id]=(artifactCounts[a.id]||0)+1;
-  }
-  updateChikaraListUI();
-  floatEl('item','✨ ひらめき'+n+'個追加！');
-}
 function setParam(key,val){
   if(key==='waveInterval'){_dpWaveInterval=val;document.getElementById('dp-waveInterval').textContent=val+'手';}
   if(key==='rockRate'){_dpBlockRate=val;document.getElementById('dp-blockRate').textContent=Math.round(val*100)+'%';}

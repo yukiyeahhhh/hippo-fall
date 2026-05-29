@@ -99,19 +99,6 @@
       </div>
     </div><!-- side-col -->
   </div><!-- game-area -->
-  <div class="hippo-meter-row">
-    <button class="hm-icon-btn" onclick="toggleChikaraPanel()" title="所持チカラを見る">
-      <span class="hm-bulb">💡</span>
-      <span class="hm-hippo">🦛</span>
-    </button>
-    <div class="hm-bar-bg"><div class="hm-bar-fill" id="hmFill"></div></div>
-    <span class="hm-label" id="hmLabel">コビトカバがひらめくまで：あと1匹</span>
-  </div>
-  <div class="pickaxe-row">
-    <span style="font-size:16px;">🔨</span>
-    <div class="pickaxe-gauge-bg"><div class="pickaxe-gauge-fill" id="pickaxeFill"></div></div>
-    <button class="pickaxe-btn" id="pickaxeBtn" onclick="usePickaxe()" disabled>使う</button>
-  </div>
 </div>
 <div class="chikara-panel" id="logPanel">
   <div class="help-inner">
@@ -120,15 +107,6 @@
       <button class="help-close" onclick="toggleLogPanel()">✕</button>
     </div>
     <div id="logPanelList"></div>
-  </div>
-</div>
-<div class="chikara-panel" id="chikaraPanel">
-  <div class="help-inner">
-    <div class="help-header">
-      <h2>✨ 所持チカラ</h2>
-      <button class="help-close" onclick="toggleChikaraPanel()">✕</button>
-    </div>
-    <div id="chikaraPanelList"></div>
   </div>
 </div>
 <div class="restart-modal" id="titleModal">
@@ -258,30 +236,16 @@
   <div style="display:flex;gap:4px;">
     <button class="dp-btn" onclick="activeSkills.duck_march.gauge=1;updateSkillSlotsUI()">🦆MAX</button>
     <button class="dp-btn" onclick="activeSkills.refresh.gauge=1;updateSkillSlotsUI()">🦦MAX</button>
-    <button class="dp-btn" onclick="pickaxeGauge=1;updatePickaxeUI()">🔨MAX</button>
     <button class="dp-btn" onclick="for(let c=0;c<COLS;c++)spawnBlockAt(ROWS-1,c);render()">ブロック出す</button>
     <button class="dp-btn" onclick="(()=>{let placed=0;for(let c=0;c<COLS&&placed<2;c++){if(!grid[ROWS-1][c]){spawnAnimalAt(ROWS-1,c,4);placed++;}}current=4;next=4;updateQueue();render();})()">🦦×2+次</button>
-  </div>
-  <div style="display:flex;gap:4px;margin-top:4px;">
-    <button class="dp-btn" style="flex:1;" onclick="if(!busy&&!gamePaused){pendingDraftCount++;busy=true;processDraftQueue().finally(()=>busy=false);}">✨ ひらめき発動</button>
-    <button class="dp-btn" style="flex:1;" onclick="debugAddArtifacts(5)">✨×5 一括</button>
-    <button class="dp-btn" style="flex:1;" onclick="if(!busy&&!gamePaused){busy=true;showStageClearAndAdvance().finally(()=>busy=false);}">⏭ 次ステージへ</button>
+    <button class="dp-btn" onclick="if(!busy&&!gamePaused){busy=true;showStageClearAndAdvance().finally(()=>busy=false);}">⏭ 次ステージへ</button>
   </div>
   <b style="display:block;margin:8px 0 4px;">カットインテスト</b>
   <div style="display:flex;flex-wrap:wrap;gap:4px;">
     <button class="dp-btn" onclick="showCutin('アヒルの大行進！','')">🦆大行進</button>
     <button class="dp-btn" onclick="showCutin('ぐるぐるシャッフル！','')">🦦シャッフル</button>
     <button class="dp-btn" onclick="showCutin('コビトカバ誕生！','')">🦛誕生</button>
-    <button class="dp-btn" onclick="showCutin('コビトカバのひらめき！','')">✨ひらめき</button>
-    <button class="dp-btn" onclick="showCutin('ハンマー発動！','')">🔨ハンマー</button>
   </div>
-  </div>
-</div>
-<div class="draft-overlay" id="draftOverlay">
-  <div class="draft-box">
-    <div class="draft-title">✨ コビトカバのひらめき ✨</div>
-    <div class="draft-sub">ひらめきを1つ選んでください</div>
-    <div class="draft-cards" id="draftCards"></div>
   </div>
 </div>
 <div id="cutinOverlay" class="cutin-overlay">
