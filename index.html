@@ -93,6 +93,14 @@
   .btn-sub:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(210,118,63,.18);}
 
   .footer{position:fixed;bottom:10px;left:0;right:0;text-align:center;font-size:10px;color:var(--ink-soft);opacity:.6;z-index:1;}
+
+  .toast{
+    position:fixed;bottom:60px;left:50%;transform:translateX(-50%) translateY(8px);
+    background:rgba(107,74,50,.88);color:#fff;font-size:13px;font-weight:700;
+    padding:9px 20px;border-radius:999px;pointer-events:none;
+    opacity:0;transition:opacity .2s,transform .2s;z-index:100;white-space:nowrap;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
 <body>
@@ -115,9 +123,12 @@
     <div class="btns">
       <button class="btn btn-main" onclick="onStart()">▶ はじめる</button>
       <button class="btn btn-sub" onclick="onHelp()">📖 あそびかた</button>
+      <button class="btn btn-sub" onclick="onShare()">🔗 シェアする</button>
     </div>
 
   </div>
+
+  <div class="toast" id="toast">URLをコピーしました</div>
 
   <audio id="titleBgm" src="assets/bgm/dew.mp3" loop preload="auto"></audio>
 
@@ -166,6 +177,21 @@
 
   function onStart(){ location.href='game.html'; }
   function onHelp(){ location.href='game.html?help=1'; }
+
+  function onShare(){
+    const url=location.href;
+    const data={title:'どうぶつポトン',text:'つなげて育てて、コビトカバを呼ぼう！',url};
+    if(navigator.share && navigator.canShare && navigator.canShare(data)){
+      navigator.share(data).catch(()=>{});
+    } else {
+      navigator.clipboard.writeText(url).then(()=>{
+        const t=document.getElementById('toast');
+        t.classList.add('show');
+        clearTimeout(t._tid);
+        t._tid=setTimeout(()=>t.classList.remove('show'),2000);
+      }).catch(()=>{});
+    }
+  }
 </script>
 </body>
 </html>
