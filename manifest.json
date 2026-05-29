@@ -1,0 +1,12 @@
+{
+  "name": "どうぶつポトン",
+  "short_name": "どうぶつポトン",
+  "start_url": "title.html",
+  "display": "standalone",
+  "background_color": "#fef3e2",
+  "theme_color": "#e8915b",
+  "icons": [
+    {"src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}
