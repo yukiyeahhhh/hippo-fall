@@ -42,7 +42,10 @@ let waveCount=0; // これまでに来た波の回数
 let survivedDrops=0; // 生き残った手数
 let dropsUntilWave=10; // 次の波までの手数
 let currentWaveInterval=10; // 現在の波間隔（カバ作成で短縮される）
-const gameLog=[];
+const LS_LOG_KEY='animalDrop_gamelog_v1';
+function loadGameLog(){try{return JSON.parse(localStorage.getItem(LS_LOG_KEY)||'[]');}catch(e){return[];}}
+function saveGameLog(){try{localStorage.setItem(LS_LOG_KEY,JSON.stringify(gameLog));}catch(e){}}
+const gameLog=loadGameLog();
 
 // ─ アクティブスキル（進化で獲得・盤面外スロット） ─
 const SKILL_GAUGE_PER_EVOLVE=1/3; // 進化1回でゲージが33%溜まる（3回で100%）
@@ -818,7 +821,7 @@ function newGame(){
   COLS=BOARD_COLS;ROWS=BOARD_ROWS;
   grid=Array.from({length:ROWS},()=>Array(COLS).fill(0));
   tiles={};uid=1;maxChain=0;waveCount=0;survivedDrops=0;resetWaveInterval();activeDropId=0;gameVersion++;busy=false;
-  gameLog.length=0;pushLog('stage','🏁 ゲームスタート');
+  gameLog.length=0;saveGameLog();pushLog('stage','🏁 ゲームスタート');
   // 新システムのリセット
   for(const k of Object.keys(activeSkills))activeSkills[k].gauge=0;
   pickaxeGauge=0;
@@ -1083,8 +1086,9 @@ async function riseStep(){
 
 // ─ ゲームログ ─
 function pushLog(type,txt){
-  gameLog.unshift({type,txt,drop:totalDrops});
+  gameLog.unshift({type,txt,drop:totalDrops,ts:Date.now()});
   if(gameLog.length>150)gameLog.length=150;
+  saveGameLog();
 }
 
 // フローティングメッセージキュー（重なり防止）
@@ -1217,6 +1221,11 @@ history.pushState({modal:'game'},'');
 try{newGame();}catch(e){window.onerror(e.message,'',0,0,e);}
 // タイトル画面の「あそびかた」から来た場合は自動でヘルプを開く
 if(new URLSearchParams(location.search).get('help')==='1')toggleHelp();
+// ページ離脱・リロード時の確認（ゲームオーバー後は不要）
+window.addEventListener('beforeunload',e=>{
+  if(overlay.classList.contains('show'))return;
+  e.preventDefault();e.returnValue='';
+});
 
 // ─ デバッグパネル ─
 function debugAddArtifacts(n){
