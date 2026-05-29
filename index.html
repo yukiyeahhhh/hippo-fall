@@ -119,7 +119,7 @@
 
   </div>
 
-  <audio id="titleBgm" src="assets/bgm/bgm01.mp3" loop preload="none"></audio>
+  <audio id="titleBgm" src="assets/bgm/bgm01.mp3" loop preload="auto"></audio>
 
   <div class="footer">© どうぶつポトン</div>
 
@@ -138,10 +138,16 @@
   }
 
   const titleBgm=document.getElementById('titleBgm');
-  try{const v=JSON.parse(localStorage.getItem('animalDrop_bgm_v1')||'{}');titleBgm.volume=v.vol??0.5;if(v.sel==='off')titleBgm.remove();}catch(e){}
+  let bgmOff=false;
+  try{const v=JSON.parse(localStorage.getItem('animalDrop_bgm_v1')||'{}');titleBgm.volume=v.vol??0.5;bgmOff=(v.sel==='off');}catch(e){}
 
-  function startTitleBgm(){titleBgm.play().catch(()=>{});}
-  document.addEventListener('pointerdown',startTitleBgm,{once:true});
+  let _bgmStarted=false;
+  function startTitleBgm(){
+    if(_bgmStarted||bgmOff)return;
+    titleBgm.play().then(()=>{_bgmStarted=true;}).catch(()=>{});
+  }
+  document.addEventListener('touchstart',startTitleBgm);
+  document.addEventListener('click',startTitleBgm);
 
   function onStart(){ location.href='game.html'; }
   function onHelp(){ location.href='game.html?help=1'; }
