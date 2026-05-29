@@ -214,17 +214,18 @@ const BGM=(()=>{
   const LS_BGM='animalDrop_bgm_v1';
   let sel='auto';
   let vol=0.5;
-  let audio=null;
+  const audio=new Audio();
+  audio.loop=true;
   let playingId=null;
   try{const s=JSON.parse(localStorage.getItem(LS_BGM)||'{}');sel=s.sel||'auto';vol=s.vol??0.5;_sfxVol=s.sfxVol??1.5;}catch(e){}
   function save(){try{localStorage.setItem(LS_BGM,JSON.stringify({sel,vol,sfxVol:_sfxVol}));}catch(e){}}
-  function stopAudio(){if(audio){audio.pause();audio.src='';audio=null;}playingId=null;}
+  function stopAudio(){audio.pause();audio.src='';playingId=null;}
   function playMp3(id){
     const t=TRACKS.find(t=>t.id===id);if(!t||!t.src)return;
-    if(playingId===id&&audio&&!audio.paused)return;
-    stopAudio();
-    audio=new Audio(t.src);
-    audio.loop=true;audio.volume=vol;
+    if(playingId===id&&!audio.paused)return;
+    audio.pause();
+    audio.src=t.src;
+    audio.volume=vol;
     audio.play().catch(()=>{});
     playingId=id;
   }
@@ -240,13 +241,13 @@ const BGM=(()=>{
     getVol(){return vol;},
     getSfxVol(){return _sfxVol;},
     setSel(id,stage){sel=id;save();applyNow(stage);},
-    setVol(v){vol=v;save();if(audio)audio.volume=vol;},
+    setVol(v){vol=v;save();audio.volume=vol;},
     setSfxVol(v){_sfxVol=v;save();},
     onStageChange(stage){if(sel==='auto')applyNow(stage);},
     start(stage){applyNow(stage);},
     stop(){stopAudio();MUSIC.stop();},
-    pause(){if(audio)audio.pause();},
-    resumeFromPause(){if(audio)audio.play().catch(()=>{});},
+    pause(){audio.pause();},
+    resumeFromPause(){if(audio.src)audio.play().catch(()=>{});},
   };
 })();
 
