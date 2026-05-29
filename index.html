@@ -14,6 +14,7 @@
   <div class="top">
     <div class="title"><h1>どうぶつポトン</h1><div class="sub">🎲 ROGUELITE MODE</div></div>
     <div style="display:flex;gap:4px;">
+      <button class="help-btn" onclick="showTitleModal()" style="margin:0;padding:5px 8px;font-size:10px;">🏠</button>
       <button class="help-btn" id="restart" onclick="showRestartModal()" style="margin:0;padding:5px 8px;font-size:10px;">↺</button>
       <button class="help-btn" onclick="toggleDebug()" style="margin:0;padding:5px 8px;font-size:10px;">⚙️</button>
       <button class="help-btn" onclick="toggleHelp()" style="margin:0;padding:5px 8px;font-size:10px;">❓</button>
@@ -125,6 +126,17 @@
       <button class="help-close" onclick="toggleChikaraPanel()">✕</button>
     </div>
     <div id="chikaraPanelList"></div>
+  </div>
+</div>
+<div class="restart-modal" id="titleModal">
+  <div class="restart-box">
+    <div class="restart-title">🏠 タイトルに戻る</div>
+    <div class="restart-sub">プレイ中の内容は失われます。<br>タイトルに戻りますか？</div>
+    <button class="restart-opt" onclick="goToTitle()">
+      <span class="ro-emo">🏠</span>
+      <span class="ro-body"><b>タイトルに戻る</b><br><span>プレイデータはリセットされます</span></span>
+    </button>
+    <button class="restart-cancel" onclick="hideTitleModal()">キャンセル</button>
   </div>
 </div>
 <div class="restart-modal" id="restartModal">

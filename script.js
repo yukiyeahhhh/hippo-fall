@@ -1186,6 +1186,9 @@ function showRestartModal(){history.pushState({modal:'restart'},'');document.get
 function hideRestartModal(){document.getElementById('restartModal').classList.remove('show');}
 function confirmRetryStage(){hideRestartModal();retryStage();}
 function confirmNewGame(){hideRestartModal();newGame();}
+function showTitleModal(){history.pushState({modal:'title'},'');document.getElementById('titleModal').classList.add('show');}
+function hideTitleModal(){document.getElementById('titleModal').classList.remove('show');}
+function goToTitle(){location.href='title.html';}
 document.getElementById('shareBtn').addEventListener('click',()=>{const txt=`🐹どうぶつポトン🦛\nStage${currentStage}到達！\nカバ${hippoMade}体 ／ 最大${maxChain}チェイン\n#どうぶつポトン`;if(navigator.share){navigator.share({text:txt}).catch(()=>{});}else{navigator.clipboard.writeText(txt).then(()=>{const b=document.getElementById('shareBtn');b.textContent='コピー済み✓';setTimeout(()=>{b.textContent='シェア📤';},2000);}).catch(()=>{});}});
 function toggleHelp(){
   const p=document.getElementById('helpPanel');
@@ -1198,15 +1201,22 @@ function toggleDebug(){
   p.style.display=open?'block':'none';
   if(open)history.pushState({modal:'debug'},'');
 }
-// スマホ戻るボタン：開いているモーダルを閉じる
+// スマホ戻るボタン：開いているモーダルを閉じる。何も開いていなければタイトル確認
 window.addEventListener('popstate',()=>{
   const dp=document.getElementById('debugPanel');
   if(dp?.style.display==='block'){dp.style.display='none';return;}
   const panels=['chikaraPanel','logPanel','helpPanel'];
   for(const id of panels){const el=document.getElementById(id);if(el?.classList.contains('show')){el.classList.remove('show');return;}}
-  if(document.getElementById('restartModal')?.classList.contains('show')){hideRestartModal();}
+  if(document.getElementById('restartModal')?.classList.contains('show')){hideRestartModal();return;}
+  if(document.getElementById('titleModal')?.classList.contains('show')){hideTitleModal();return;}
+  // 何も開いていない → タイトルへ戻る確認
+  showTitleModal();
 });
+// 戻るボタンをゲーム内で受け取れるよう初期状態を積む
+history.pushState({modal:'game'},'');
 try{newGame();}catch(e){window.onerror(e.message,'',0,0,e);}
+// タイトル画面の「あそびかた」から来た場合は自動でヘルプを開く
+if(new URLSearchParams(location.search).get('help')==='1')toggleHelp();
 
 // ─ デバッグパネル ─
 function debugAddArtifacts(n){
