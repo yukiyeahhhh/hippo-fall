@@ -1188,7 +1188,7 @@ function confirmRetryStage(){hideRestartModal();retryStage();}
 function confirmNewGame(){hideRestartModal();newGame();}
 function showTitleModal(){history.pushState({modal:'title'},'');document.getElementById('titleModal').classList.add('show');}
 function hideTitleModal(){document.getElementById('titleModal').classList.remove('show');}
-function goToTitle(){location.href='title.html';}
+function goToTitle(){location.href='index.html';}
 document.getElementById('shareBtn').addEventListener('click',()=>{const txt=`🐹どうぶつポトン🦛\nStage${currentStage}到達！\nカバ${hippoMade}体 ／ 最大${maxChain}チェイン\n#どうぶつポトン`;if(navigator.share){navigator.share({text:txt}).catch(()=>{});}else{navigator.clipboard.writeText(txt).then(()=>{const b=document.getElementById('shareBtn');b.textContent='コピー済み✓';setTimeout(()=>{b.textContent='シェア📤';},2000);}).catch(()=>{});}});
 function toggleHelp(){
   const p=document.getElementById('helpPanel');

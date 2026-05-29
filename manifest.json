@@ -1,7 +1,7 @@
 {
   "name": "どうぶつポトン",
   "short_name": "どうぶつポトン",
-  "start_url": "title.html",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#fef3e2",
   "theme_color": "#e8915b",

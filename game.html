@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>どうぶつポトン ローグライト</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="style.css">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="manifest" href="manifest.json">
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="title"><h1>どうぶつポトン</h1><div class="sub">🎲 ROGUELITE MODE</div></div>
+    <div style="display:flex;gap:4px;">
+      <button class="help-btn" onclick="showTitleModal()" style="margin:0;padding:5px 8px;font-size:10px;">🏠</button>
+      <button class="help-btn" id="restart" onclick="showRestartModal()" style="margin:0;padding:5px 8px;font-size:10px;">↺</button>
+      <button class="help-btn" onclick="toggleDebug()" style="margin:0;padding:5px 8px;font-size:10px;">⚙️</button>
+      <button class="help-btn" onclick="toggleHelp()" style="margin:0;padding:5px 8px;font-size:10px;">❓</button>
+    </div>
+  </div>
+  <div class="queue">
+    <div class="qpair">
+      <span class="qbox qnow">おとす<span class="e" id="cnow">🐹</span></span>
+      <span class="qsep">▸</span>
+      <span class="qbox qnext">つぎ<span class="e" id="cnext">🦆</span></span>
+    </div>
+    <span class="risecount" id="riseCount">⚠ あと8手</span>
+  </div>
+  <div class="goal-row">
+    <span class="goal-icon">🦛</span>
+    <span class="goal-label" id="goalLabel">STAGE <b id="stageNum">1</b> ／ カバ作成</span>
+    <div class="goal-bar-bg"><div class="goal-bar-fill" id="goalFill"></div></div>
+    <span class="goal-count" id="goalCount">0/1</span>
+  </div>
+  <div class="game-area">
+    <div class="board-col">
+      <div class="board-wrap">
+        <div class="board" id="board">
+      <div class="grid" id="grid"></div>
+      <div class="tiles" id="tiles">
+        <div class="danger-line" id="dangerLine"></div>
+        <div class="danger-label" id="dangerLabel">⚠ DANGER</div>
+      </div>
+      <div class="overlay" id="overlay">
+        <div class="big" id="ovEmo">😵</div>
+        <h2 id="ovTitle">ブロックがあふれちゃった…</h2>
+        <div class="fin">到達ステージ</div>
+        <div class="finscore" id="finscore">0</div>
+        <div class="fin" id="finmsg"></div>
+        <ol class="history-list" id="historyList" style="text-align:left;width:100%;"></ol>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:5px;width:100%;">
+          <!-- ゲームオーバー時のみ表示：2択ボタン -->
+          <div id="retryBtns" style="display:flex;gap:8px;">
+            <button class="btn" id="retryStageBtn" style="flex:1;font-size:12px;">このステージから<br>やり直す</button>
+            <button class="btn" id="ovBtn" style="flex:1;font-size:12px;background:rgba(200,100,50,.18);color:var(--accent-d);">最初から</button>
+          </div>
+          <!-- クリア時のみ表示 -->
+          <button class="btn" id="clearOkBtn" style="display:none;">つぎへ / もういちど</button>
+          <button class="share-btn" id="shareBtn">シェア📤</button>
+        </div>
+      </div>
+      </div>
+      </div><!-- board-wrap -->
+    </div><!-- board-col -->
+    <div class="side-col">
+      <div class="lv-panel" id="lvPanel">
+        <!-- 上部：ステージ表示 -->
+        <div class="side-stage">
+          <div class="ss-label">STAGE</div>
+          <div class="ss-num" id="ssNum">1</div>
+          <div class="ss-hippo">🦛</div>
+          <div class="ss-count" id="ssCount">0/1</div>
+        </div>
+        <!-- 下部：スキルスロット縦長 -->
+        <div class="lv-side skill-slot-big" id="slot-squirrel" onclick="activateSkill('squirrel')">
+          <span class="la-big">🐿️</span>
+          <div class="skill-sname">セーフ</div>
+          <div class="skill-charge-bar"><div class="scbf" id="scbf-squirrel"></div></div>
+          <span class="lct">0%</span>
+        </div>
+        <div class="lv-side skill-slot-big" id="slot-duck_march" onclick="activateSkill('duck_march')">
+          <span class="la-big">🦆</span>
+          <div class="skill-sname">大行進</div>
+          <div class="skill-charge-bar"><div class="scbf" id="scbf-duck_march"></div></div>
+          <span class="lct">0%</span>
+        </div>
+        <div class="lv-side skill-slot-big" id="slot-refresh" onclick="activateSkill('refresh')">
+          <span class="la-big">🦦</span>
+          <div class="skill-sname">シャッフル</div>
+          <div class="skill-charge-bar"><div class="scbf" id="scbf-refresh"></div></div>
+          <span class="lct">0%</span>
+        </div>
+        <button class="log-open-btn" onclick="toggleLogPanel()" title="履歴を見る">📜</button>
+      </div>
+    </div><!-- side-col -->
+  </div><!-- game-area -->
+  <div class="hippo-meter-row">
+    <button class="hm-icon-btn" onclick="toggleChikaraPanel()" title="所持チカラを見る">
+      <span class="hm-bulb">💡</span>
+      <span class="hm-hippo">🦛</span>
+    </button>
+    <div class="hm-bar-bg"><div class="hm-bar-fill" id="hmFill"></div></div>
+    <span class="hm-label" id="hmLabel">コビトカバがひらめくまで：あと1匹</span>
+  </div>
+  <div class="pickaxe-row">
+    <span style="font-size:16px;">🔨</span>
+    <div class="pickaxe-gauge-bg"><div class="pickaxe-gauge-fill" id="pickaxeFill"></div></div>
+    <button class="pickaxe-btn" id="pickaxeBtn" onclick="usePickaxe()" disabled>使う</button>
+  </div>
+</div>
+<div class="chikara-panel" id="logPanel">
+  <div class="help-inner">
+    <div class="help-header">
+      <h2>📜 履歴</h2>
+      <button class="help-close" onclick="toggleLogPanel()">✕</button>
+    </div>
+    <div id="logPanelList"></div>
+  </div>
+</div>
+<div class="chikara-panel" id="chikaraPanel">
+  <div class="help-inner">
+    <div class="help-header">
+      <h2>✨ 所持チカラ</h2>
+      <button class="help-close" onclick="toggleChikaraPanel()">✕</button>
+    </div>
+    <div id="chikaraPanelList"></div>
+  </div>
+</div>
+<div class="restart-modal" id="titleModal">
+  <div class="restart-box">
+    <div class="restart-title">🏠 タイトルに戻る</div>
+    <div class="restart-sub">プレイ中の内容は失われます。<br>タイトルに戻りますか？</div>
+    <button class="restart-opt" onclick="goToTitle()">
+      <span class="ro-emo">🏠</span>
+      <span class="ro-body"><b>タイトルに戻る</b><br><span>プレイデータはリセットされます</span></span>
+    </button>
+    <button class="restart-cancel" onclick="hideTitleModal()">キャンセル</button>
+  </div>
+</div>
+<div class="restart-modal" id="restartModal">
+  <div class="restart-box">
+    <div class="restart-title">↺ リスタート</div>
+    <div class="restart-sub">どこからやり直しますか？</div>
+    <button class="restart-opt" onclick="confirmRetryStage()">
+      <span class="ro-emo">🔄</span>
+      <span class="ro-body"><b>このステージをやり直す</b><br><span>ひらめき・ステージ数はそのまま</span></span>
+    </button>
+    <button class="restart-opt restart-opt-full" onclick="confirmNewGame()">
+      <span class="ro-emo">🏁</span>
+      <span class="ro-body"><b>Stage 1 から最初から</b><br><span>ひらめき・ステージ数もリセット</span></span>
+    </button>
+    <button class="restart-cancel" onclick="hideRestartModal()">キャンセル</button>
+  </div>
+</div>
+<div class="help-panel" id="helpPanel">
+  <div class="help-inner">
+    <div class="help-header"><h2>📖 あそびかた</h2><button class="help-close" onclick="toggleHelp()">✕</button></div>
+
+    <div class="help-card">
+      <div class="hc-title">🐾 進化のじゅんばん</div>
+      <div class="help-chain"><span>🐹</span><span class="arr">▶</span><span>🐿️</span><span class="arr">▶</span><span>🦆</span><span class="arr">▶</span><span>🦦</span><span class="arr">▶</span><span>🦛</span></div>
+      <div class="hc-note">同じ動物が<b>3匹以上</b>くっつくと合体・進化するよ！</div>
+    </div>
+
+    <div class="help-card">
+      <div class="hc-title">🏁 目的</div>
+      <div class="hc-row"><span class="hc-emo">🦛</span><span><b>指定された数のコビトカバを作るとステージクリア！</b></span></div>
+      <div class="hc-row"><span class="hc-emo">☠️</span><span>赤いラインを越えたらゲームオーバー。</span></div>
+    </div>
+
+    <div class="help-card">
+      <div class="hc-title">🔺 せりあがり</div>
+      <div class="hc-row"><span class="hc-emo">🔺</span><span>一定の手数ごとに、下から<b>おじゃまブロックがせりあがってくるよ。</b></span></div>
+      <div class="hc-row"><span class="hc-emo">📈</span><span>ステージが進むほどブロックの量が増えるから注意！</span></div>
+    </div>
+
+    <div class="help-card">
+      <div class="hc-title">🔨 ハンマー</div>
+      <div class="hc-row"><span class="hc-emo">💪</span><span><b>合体・連鎖でゲージが溜まるよ。</b>満タンになると使える！</span></div>
+      <div class="hc-row"><span class="hc-emo">💥</span><span>「使う」ボタンで<b>おじゃまブロックを一気に壊して</b>大逆転を狙おう！</span></div>
+    </div>
+
+    <div class="help-card">
+      <div class="hc-title">🎁 おたすけアクション</div>
+      <div class="hc-action">
+        <div class="hca-head"><span class="hca-emo">🐿️</span><span class="hca-name">ギリギリセーフ</span></div>
+        <div class="hca-trigger">リスに進化でゲージ +33%</div>
+        <div class="hca-effect">デンジャーライン付近のブロックを一掃！</div>
+      </div>
+      <div class="hc-action">
+        <div class="hca-head"><span class="hca-emo">🦆</span><span class="hca-name">大行進</span></div>
+        <div class="hca-trigger">アヒルに進化でゲージ +33%</div>
+        <div class="hca-effect">ランダムな動物2〜3匹をアヒルに変換！</div>
+      </div>
+      <div class="hc-action">
+        <div class="hca-head"><span class="hca-emo">🦦</span><span class="hca-name">ぐるぐるシャッフル</span></div>
+        <div class="hca-trigger">カワウソに進化でゲージ +33%</div>
+        <div class="hca-effect">ブロックはそのまま、動物の位置をシャッフル！</div>
+      </div>
+    </div>
+
+    <div class="help-card">
+      <div class="hc-title">🦛 コビトカバのひらめき</div>
+      <div class="hc-row"><span class="hc-emo">✨</span><span>コビトカバを作ると<b>ひらめきを1つ選べる！</b><br>最初は1匹・次は2匹・以降は3匹ごとにチャンスが来る。</span></div>
+      <div class="hc-row"><span class="hc-emo">🔗</span><span>ひらめきは<b>ステージをまたいで持続</b>するよ。</span></div>
+      <div class="hc-row"><span class="hc-emo">⬆️</span><span>同じひらめきを重ね取りすると<b>レベルアップ</b>して効果が強くなる！</span></div>
+      <div class="hc-row"><span class="hc-emo">💡</span><span>ゲーム中の <b>💡🦛ボタン</b> で手持ちのひらめきを確認できるよ！</span></div>
+    </div>
+
+    <div class="help-card">
+      <div class="hc-title">🌟 ステージ進行</div>
+      <div class="hc-row"><span class="hc-emo">1️⃣</span><span>STAGE 1：カバ1匹／盤面は空からスタート</span></div>
+      <div class="hc-row"><span class="hc-emo">2️⃣</span><span>STAGE 2：カバ2匹／ブロックが少し配置</span></div>
+      <div class="hc-row"><span class="hc-emo">3️⃣</span><span>STAGE 3〜5：カバ2〜3匹／ブロックと動物が入り乱れた盤面</span></div>
+      <div class="hc-row"><span class="hc-emo">♾️</span><span>STAGE 6以降：エンドレス！ステージごとに難しくなるよ</span></div>
+    </div>
+  </div>
+</div>
+<div id="debugPanel">
+  <div id="debugBody">
+  <b style="display:block;margin-bottom:4px;">バランス調整</b>
+  <div class="dp-row"><span class="dp-label">波の間隔</span>
+    <button class="dp-btn" onclick="setParam('waveInterval',3)">3手</button>
+    <button class="dp-btn" onclick="setParam('waveInterval',5)">5手</button>
+    <button class="dp-btn" onclick="setParam('waveInterval',7)">7手</button>
+    <button class="dp-btn on" onclick="setParam('waveInterval',10)">10手</button>
+    <span class="dp-val" id="dp-waveInterval">10手</span>
+  </div>
+  <div class="dp-row"><span class="dp-label">ブロック出現率</span>
+    <button class="dp-btn" onclick="setParam('rockRate',0.10)">10%</button>
+    <button class="dp-btn" onclick="setParam('rockRate',0.25)">25%</button>
+    <button class="dp-btn on" onclick="setParam('rockRate',0.35)">35%</button>
+    <button class="dp-btn" onclick="setParam('rockRate',0.50)">50%</button>
+    <span class="dp-val" id="dp-blockRate">35%</span>
+  </div>
+  <button class="dp-btn" style="width:100%;margin-top:4px;background:#e8915b;" onclick="newGame()">↺ 反映してリスタート</button>
+  <b style="display:block;margin:8px 0 4px;">ゲージ補充</b>
+  <div style="display:flex;gap:4px;">
+    <button class="dp-btn" onclick="activeSkills.duck_march.gauge=1;updateSkillSlotsUI()">🦆MAX</button>
+    <button class="dp-btn" onclick="activeSkills.refresh.gauge=1;updateSkillSlotsUI()">🦦MAX</button>
+    <button class="dp-btn" onclick="pickaxeGauge=1;updatePickaxeUI()">🔨MAX</button>
+    <button class="dp-btn" onclick="for(let c=0;c<COLS;c++)spawnBlockAt(ROWS-1,c);render()">ブロック出す</button>
+    <button class="dp-btn" onclick="(()=>{let placed=0;for(let c=0;c<COLS&&placed<2;c++){if(!grid[ROWS-1][c]){spawnAnimalAt(ROWS-1,c,4);placed++;}}current=4;next=4;updateQueue();render();})()">🦦×2+次</button>
+  </div>
+  <div style="display:flex;gap:4px;margin-top:4px;">
+    <button class="dp-btn" style="flex:1;" onclick="if(!busy&&!gamePaused){pendingDraftCount++;busy=true;processDraftQueue().finally(()=>busy=false);}">✨ ひらめき発動</button>
+    <button class="dp-btn" style="flex:1;" onclick="debugAddArtifacts(5)">✨×5 一括</button>
+    <button class="dp-btn" style="flex:1;" onclick="if(!busy&&!gamePaused){busy=true;showStageClearAndAdvance().finally(()=>busy=false);}">⏭ 次ステージへ</button>
+  </div>
+  <b style="display:block;margin:8px 0 4px;">カットインテスト</b>
+  <div style="display:flex;flex-wrap:wrap;gap:4px;">
+    <button class="dp-btn" onclick="showCutin('アヒルの大行進！','')">🦆大行進</button>
+    <button class="dp-btn" onclick="showCutin('ぐるぐるシャッフル！','')">🦦シャッフル</button>
+    <button class="dp-btn" onclick="showCutin('コビトカバ誕生！','')">🦛誕生</button>
+    <button class="dp-btn" onclick="showCutin('コビトカバのひらめき！','')">✨ひらめき</button>
+    <button class="dp-btn" onclick="showCutin('ハンマー発動！','')">🔨ハンマー</button>
+  </div>
+  </div>
+</div>
+<div class="draft-overlay" id="draftOverlay">
+  <div class="draft-box">
+    <div class="draft-title">✨ コビトカバのひらめき ✨</div>
+    <div class="draft-sub">ひらめきを1つ選んでください</div>
+    <div class="draft-cards" id="draftCards"></div>
+  </div>
+</div>
+<div id="cutinOverlay" class="cutin-overlay">
+  <div class="cutin-box">
+    <img class="cutin-img" id="cutinImg" src="" alt="">
+    <div class="cutin-title" id="cutinTitle"></div>
+    <div class="cutin-message" id="cutinMessage"></div>
+  </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
