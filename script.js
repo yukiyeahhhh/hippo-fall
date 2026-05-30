@@ -727,7 +727,7 @@ function findComponents(){
   return comps;
 }
 function pickSurvivor(cells){if(activeDropId){for(const c of cells){if(grid[c.r][c.c]===activeDropId)return c;}}let b=cells[0];for(const c of cells){if(c.r<b.r||(c.r===b.r&&c.c<b.c))b=c;}return b;}
-function tiersJump(size){return 1;} // 合体数に関わらず常に+1段階
+function tiersJump(size){return size>=5?2:1;} // 飛び級進化：5個以上同時合体で+2段階
 function applyGravity(){for(let c=0;c<COLS;c++){const stack=[];for(let r=ROWS-1;r>=0;r--)if(grid[r][c])stack.push(grid[r][c]);for(let r=0;r<ROWS;r++)grid[r][c]=0;for(let i=0;i<stack.length;i++){const r=ROWS-1-i;grid[r][c]=stack[i];tiles[stack[i]].r=r;tiles[stack[i]].c=c;}}}
 
 // ─ resolveBoard ─
@@ -742,7 +742,7 @@ async function resolveBoard(){
     for(const cp of comps){
       if(cp.tier>=MAX_TIER)continue; // カバの連結成分はそもそも作られないが念のため
       const surv=pickSurvivor(cp.cells),sid=grid[surv.r][surv.c];
-      const size=cp.cells.length,prev=cp.tier,newTier=Math.min(prev+1,MAX_TIER),rise=newTier-prev;
+      const size=cp.cells.length,prev=cp.tier,newTier=Math.min(prev+tiersJump(size),MAX_TIER),rise=newTier-prev;
       // 生存セル以外をremoveSetへ
       for(const cell of cp.cells){
         if(cell.r===surv.r&&cell.c===surv.c)continue;
