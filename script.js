@@ -54,6 +54,7 @@ let activeSkills={
   duck_march: {emoji:'🦆', name:'大行進',     gauge:0, fromTier:3},
   refresh:    {emoji:'🦦', name:'おてだま',   gauge:0, fromTier:4}
 };
+let aiming=null; // 照準モード {key, picks:[ids]}。アヒル/カワウソが対象選択を待つ状態
 
 // ─ ステージ進行 ─
 let gamePaused=false;   // カットイン等の演出中フラグ
@@ -337,6 +338,7 @@ function updateSkillSlotsUI(){
     if(bar)bar.style.width=(s.gauge*100)+'%';
     el.style.opacity=s.gauge>0?'1':'.4';
     el.classList.toggle('skill-ready',ready);
+    el.classList.toggle('skill-aiming',!!aiming&&aiming.key===key);
   }
 }
 // ─ カットイン演出（基盤） ─
@@ -363,26 +365,63 @@ async function showCutin(title, message, duration=2200){
   gamePaused=false;
 }
 
-// ─ アクティブスキル発動（即時・チャージ制） ─
+// ─ アクティブスキル発動 ─
 function activateSkill(key){
-  if(busy||gamePaused||overlay.classList.contains('show'))return;
-  const s=activeSkills[key];if(!s||s.gauge<1)return;
-  s.gauge=0;
-  updateSkillSlotsUI();
+  if(overlay.classList.contains('show'))return;
+  const s=activeSkills[key];if(!s)return;
+  // 照準中にスキルを押したら一旦キャンセル（同じスキルならそのまま終了＝やめる）
+  if(aiming){const cur=aiming.key;cancelAiming();if(cur===key)return;}
+  if(busy||gamePaused||s.gauge<1)return;
+  // 照準系（対象選択が要る）
+  if(key==='duck_march'){startAiming('duck_march','🦆 大行進：集めたい動物をタップ（もう一度🦆でやめる）');return;}
+  // 即時系（リス・※カワウソは4cで照準化）
+  s.gauge=0;updateSkillSlotsUI();
   busy=true;
   (async()=>{
     try{
       if(key==='squirrel')await applySquirrelRest();
-      else if(key==='duck_march')await applyDuckMarch();
       else if(key==='refresh')await applyBoardRefresh();
-      applyGravity();render();await sleep(200);
-      const born=await resolveBoard();
-      if(born)await handleHippoBorn();
-      await checkStageClear();
-      if(isDanger()){endGame('💥','ブロックがあふれちゃった…');return;}
-      checkClose();
+      await finishSkillResolve();
     }finally{busy=false;}
   })();
+}
+
+// スキルで盤面を動かした後の共通処理（重力→連鎖→カバ全破壊→クリア判定→詰み判定）
+async function finishSkillResolve(){
+  applyGravity();render();await sleep(200);
+  const born=await resolveBoard();
+  if(born)await handleHippoBorn();
+  await checkStageClear();
+  if(isDanger()){endGame('💥','ブロックがあふれちゃった…');return;}
+  checkClose();
+}
+
+// ─ 照準モード（アヒル/カワウソ共通） ─
+function startAiming(key,msg){
+  aiming={key,picks:[]};
+  showAimBanner(msg);
+  boardEl.classList.add('aiming');
+  updateSkillSlotsUI();
+}
+function cancelAiming(){
+  if(!aiming)return;
+  for(const id of aiming.picks){if(tiles[id]){const el=document.getElementById('tile-'+id);if(el)el.classList.remove('aim-pick');}}
+  aiming=null;hideAimBanner();boardEl.classList.remove('aiming');updateSkillSlotsUI();
+}
+function showAimBanner(msg){const b=document.getElementById('aimBanner');if(b){b.textContent=msg;b.classList.add('show');}}
+function hideAimBanner(){const b=document.getElementById('aimBanner');if(b)b.classList.remove('show');}
+// 照準モード中の盤面タップ
+function handleAimTap(row,col){
+  if(busy||!aiming)return;
+  const id=grid[row]?.[col];
+  if(!id||!tiles[id]||tiles[id].rock){floatEl('toast','動物をタップしてね');return;}
+  if(aiming.key==='duck_march'){
+    const tier=tiles[id].tier;
+    cancelAiming();
+    activeSkills.duck_march.gauge=0;updateSkillSlotsUI();
+    busy=true;
+    (async()=>{try{await runDuckMarch(tier,col);await finishSkillResolve();}finally{busy=false;}})();
+  }
 }
 // ─ アクティブスキル効果 ─
 
@@ -396,21 +435,29 @@ async function applySquirrelRest(){
   await sleep(500);
 }
 
-// 🦆 アヒルの大行進：ランダムな動物2〜3匹をアヒルに変換
-async function applyDuckMarch(){
+// 🦆 アヒルの大行進：指定tierの動物が全員、タップした列にドサッと積み上がる→縦に並んで自動合体
+// その列が埋まったら近い列へあふれる（＝混んだ盤面ほど集まりきらない＝仕様の「入る分だけ」）
+async function runDuckMarch(tier,anchorCol){
   SFX.itemDuck();await showCutin('アヒルの大行進！','');
-  const candidates=[];
-  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-    const id=grid[r][c];
-    if(id&&tiles[id]&&!tiles[id].rock&&tiles[id].tier<3)candidates.push(id);
+  const members=[];
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const id=grid[r][c];if(id&&tiles[id]&&!tiles[id].rock&&tiles[id].tier===tier)members.push(id);}
+  if(members.length<2){floatEl('toast','🦆 集める仲間がいない');return;}
+  // 集合先の列＝タップした列
+  const lc=anchorCol;
+  // 全メンバーを一旦外し、残りを重力で下詰めにする（他の動物は押しのけず自然に落ちるだけ）
+  for(const id of members){const t=tiles[id];grid[t.r][t.c]=0;}
+  applyGravity();
+  // タップした列から近い順に、各列の空き（重力後は上側に連続）へ下から積む
+  const cols=[...Array(COLS).keys()].sort((a,b)=>Math.abs(a-lc)-Math.abs(b-lc)||a-b);
+  const slots=[];
+  for(const c of cols)for(let r=ROWS-1;r>=0;r--){if(!grid[r][c])slots.push({r,c});}
+  let placed=0;
+  for(const id of members){
+    const cell=slots[placed];if(!cell)break; // 入りきらない分はそのまま消える前提だが盤面外には出ない
+    const t=tiles[id];t.r=cell.r;t.c=cell.c;grid[cell.r][cell.c]=id;t.skillHit=true;placed++;
   }
-  if(candidates.length===0){floatEl('toast','🦆 変換対象なし');return;}
-  // シャッフルして2〜3匹選ぶ
-  for(let i=candidates.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[candidates[i],candidates[j]]=[candidates[j],candidates[i]];}
-  const n=Math.min(candidates.length,2+Math.floor(Math.random()*2)); // 2 or 3
-  for(let i=0;i<n;i++){tiles[candidates[i]].tier=3;tiles[candidates[i]].skillHit=true;}
-  render();SFX.itemDuck();floatEl('item','🦆 大行進！ '+n+'匹がアヒルに！');
-  await sleep(700);
+  render();floatEl('item','🦆 大行進！');
+  await sleep(450);
 }
 
 // 🦦 盤面リフレッシュ：ブロックはそのまま、動物の位置だけシャッフル
@@ -590,7 +637,7 @@ async function spawnRubble(plan,animate){
 
 // ─ 初期盤面セットアップ（瓦礫を上から落として組む。開始盤面は3揃いを作らず連鎖もしない＝静かに考えるスタート） ─
 async function setupStage(stage){
-  busy=true;
+  busy=true;cancelAiming();
   grid=Array.from({length:ROWS},()=>Array(COLS).fill(0));
   tiles={};uid=1;activeDropId=0;
   tilesEl.innerHTML='';
@@ -936,6 +983,7 @@ function retryStage(){
 }
 
 function endGame(emo,title){
+  cancelAiming();
   const entry={stage:currentStage,maxChain,date:Date.now()};
   const history=saveHistory(entry);
   document.getElementById('ovEmo').textContent=emo;document.getElementById('ovTitle').textContent=title;
@@ -953,10 +1001,11 @@ function cellFromXY(cx,cy){const rect=boardEl.getBoundingClientRect(),pad=parseF
 boardEl.addEventListener('click',e=>{
   BGM.start(currentStage);
   if(overlay.classList.contains('show')||gamePaused)return;
-  const{col}=cellFromXY(e.clientX,e.clientY);
+  const{col,row}=cellFromXY(e.clientX,e.clientY);
+  if(aiming){handleAimTap(row,col);return;}
   if(!busy)drop(col);
 });
-boardEl.addEventListener('pointermove',e=>{if(busy)return;const{col}=cellFromXY(e.clientX,e.clientY);bgCells.forEach((d,i)=>d.classList.toggle('aim',i%COLS===col&&!d.classList.contains('dz0')&&!d.classList.contains('dz1')));});
+boardEl.addEventListener('pointermove',e=>{if(busy||aiming)return;const{col}=cellFromXY(e.clientX,e.clientY);bgCells.forEach((d,i)=>d.classList.toggle('aim',i%COLS===col&&!d.classList.contains('dz0')&&!d.classList.contains('dz1')));});
 boardEl.addEventListener('pointerleave',()=>bgCells.forEach(d=>d.classList.remove('aim')));
 document.getElementById('ovBtn').onclick=newGame;
 document.getElementById('retryStageBtn').onclick=retryStage;

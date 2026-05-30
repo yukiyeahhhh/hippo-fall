@@ -44,6 +44,11 @@
   @keyframes shake{0%,100%{transform:translate(0,0);}20%{transform:translate(-6px,2px);}40%{transform:translate(6px,-2px);}60%{transform:translate(-4px,-1px);}80%{transform:translate(4px,2px);}}
   .tile.gone{animation:fadeout .16s ease forwards;z-index:0;}
   .board.shake{animation:shake .35s ease;}
+  .aim-banner{position:absolute;top:8px;left:50%;transform:translateX(-50%);max-width:92%;background:rgba(30,20,5,.86);color:#fff;font-weight:800;font-size:12px;line-height:1.3;padding:6px 12px;border-radius:11px;z-index:9;pointer-events:none;text-align:center;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3);}
+  .aim-banner.show{display:block;animation:pop .2s ease;}
+  .board.aiming{outline:3px solid rgba(255,170,60,.85);outline-offset:-3px;}
+  .skill-slot-big.skill-aiming{background:rgba(255,170,60,.55)!important;animation:linepulse .7s ease infinite;}
+  .tile.aim-pick{outline:3px solid #ffd24a;outline-offset:-2px;z-index:9;}
   .danger-line{position:absolute;left:0;right:0;height:3px;border-radius:2px;pointer-events:none;z-index:4;background:repeating-linear-gradient(90deg,var(--danger) 0,var(--danger) 9px,transparent 9px,transparent 16px);}
   .danger-label{position:absolute;right:0;font-size:9px;font-weight:800;color:var(--danger);background:rgba(255,235,235,.9);padding:1px 5px;border-radius:5px;pointer-events:none;z-index:4;transform:translateY(-100%);}
   @keyframes linepulse{0%,100%{opacity:1;}50%{opacity:.25;}}
