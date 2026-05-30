@@ -375,7 +375,8 @@ function activateSkill(key){
       else if(key==='duck_march')await applyDuckMarch();
       else if(key==='refresh')await applyBoardRefresh();
       applyGravity();render();await sleep(200);
-      await resolveBoard();
+      const born=await resolveBoard();
+      if(born)await handleHippoBorn();
       await checkStageClear();
       if(isDanger()){endGame('💥','ブロックがあふれちゃった…');return;}
       checkClose();
@@ -439,30 +440,29 @@ function spawnHamsterAt(r,c){
   tiles[id]=t;grid[r][c]=id;paint(t);
 }
 
-// ─ resolveBoard外でカバになったタイルを演出付きで処理 ─
-async function processPendingHippos(){
-  // pendingHippoフラグが立っているタイルを収集
-  const pending=Object.keys(tiles).filter(id=>tiles[id]&&tiles[id].pendingHippo&&tiles[id].tier===MAX_TIER);
-  if(pending.length===0)return;
-  SFX.itemHippo(2);await showCutin('コビトカバ誕生！','');
-  for(const id of pending){
-    if(!tiles[id])continue;
-    tiles[id].pendingHippo=false;
-    const el=document.getElementById('tile-'+id);
-    if(el)el.classList.add('hippo-born');
-  }
-  render();
-  floatEl('toast','🦛 コビトカバ誕生！');SFX.bigmerge(5);burst();shake();
-  await sleep(900);
-  for(const id of pending){
-    if(!tiles[id])continue;
-    // グリッド全体からIDを検索して削除
-    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){if(grid[r][c]===Number(id))grid[r][c]=0;}
-    removeFade(Number(id));
-    hippoMade++;
-    updateStageUI();
-  }
-  applyGravity();render();
+// ─ カバ誕生：盤面を全破壊 → 瓦礫が落ちて新しい初期盤面（コアループの心臓） ─
+async function handleHippoBorn(){
+  await obliterateBoard();
+  // このカバでステージクリアするなら盤面は作らない（クリア演出が次盤面を用意する）
+  if(currentStage<=TOTAL_STAGES && hippoMade>=hippoGoal)return;
+  // 同ステージ継続：瓦礫で新しい初期盤面 → A案連鎖
+  const born=await dropRubble();
+  if(born)await handleHippoBorn(); // 瓦礫の偶発連鎖で再びカバが出たら、また全破壊
+}
+
+// 盤面の全タイル（動物・ブロック）を消し飛ばす
+async function obliterateBoard(){
+  SFX.rowclear();SFX.bigmerge(5);burst();burst();shake();
+  bgCells.forEach(d=>{d.style.background='rgba(255,140,0,.6)';setTimeout(()=>{d.style.background='';},420);});
+  for(const id of Object.keys(tiles))removeFade(Number(id));
+  grid=Array.from({length:ROWS},()=>Array(COLS).fill(0));
+  await sleep(460);
+}
+
+// 瓦礫を上から落として新しい初期盤面を作る。偶発的な3揃いはそのまま連鎖（A案・ジャックポット歓迎）
+async function dropRubble(){
+  await spawnRubble(planRubble(false),true);
+  return await resolveBoard();
 }
 
 // ─ ステージクリア判定：エンドレス中（TOTAL_STAGES超過）は進行しない ─
@@ -504,18 +504,18 @@ async function showStageClearAndAdvance(){
   currentStage++;
   hippoMade=0;
   hippoGoal=getStageGoal(currentStage);
-  setupStage(currentStage);
   updateAtmosphere();
   updateStageUI();updateSkillSlotsUI();
 
-  // ステージ開始演出
+  // ステージ開始演出 → そのあと瓦礫が落ちてくる
   const g=document.createElement('div');
   g.className='levelup-pop';
   const isEndless=currentStage>TOTAL_STAGES;
   g.innerHTML=`<span class="lu-emo">${isEndless?'♾️':'🌊'}</span><span class="lu-txt">${isEndless?'ENDLESS MODE':'STAGE '+currentStage+'/'+TOTAL_STAGES}</span>`;
   boardEl.appendChild(g);
-  await sleep(1200);
+  await sleep(1100);
   g.remove();
+  await setupStage(currentStage);
   gamePaused=false;
   BGM.onStageChange(currentStage);MUSIC.resumeFromPause();
 }
@@ -547,45 +547,62 @@ function rebuildBoard(newCols,newRows){
   applyGravity();render();
 }
 
-// ─ ステージごとの初期配置ギミック ─
-function setupStage(stage){
-  // ボードをクリア
+// ─ 瓦礫ジェネレーター：新しい初期盤面（開始時・カバ全破壊後・ステージ移行で共通） ─
+const RUBBLE_H_MIN=2, RUBBLE_H_MAX=5;   // 列ごとの瓦礫の高さレンジ（凸凹に積む）
+const RUBBLE_BLOCK_RATIO=0.22;          // 瓦礫マスのうちおじゃまブロックの割合
+// 瓦礫の動物Tier分布：T1 45% / T2 30% / T3 18% / T4 7%（T4は1盤面1〜2匹）
+function rollRubbleTier(){const r=Math.random();return r<0.45?1:r<0.75?2:r<0.93?3:4;}
+
+// 瓦礫の配置を決める（grid/tilesには触れない）。avoidMatches=trueなら3つ揃いを作らない＝開始時用
+function planRubble(avoidMatches){
+  const plan=Array.from({length:ROWS},()=>Array(COLS).fill(null));
+  const tAt=(r,c)=>{const cell=plan[r]?.[c];return(cell&&!cell.rock)?cell.tier:0;};
+  // (r,c)にtierを置いたら何個つながるか（3で打ち切り）
+  const conn=(sr,sc,t)=>{const seen=new Set([sr*100+sc]),q=[[sr,sc]];let n=1;while(q.length){const[cr,cc]=q.pop();for(const[dr,dc]of[[1,0],[-1,0],[0,1],[0,-1]]){const nr=cr+dr,nc=cc+dc,k=nr*100+nc;if(nr<0||nr>=ROWS||nc<0||nc>=COLS||seen.has(k))continue;if(tAt(nr,nc)===t){seen.add(k);q.push([nr,nc]);if(++n>=3)return n;}}}return n;};
+  for(let c=0;c<COLS;c++){
+    const h=RUBBLE_H_MIN+Math.floor(Math.random()*(RUBBLE_H_MAX-RUBBLE_H_MIN+1));
+    for(let r=ROWS-1;r>ROWS-1-h&&r>=0;r--){
+      if(Math.random()<RUBBLE_BLOCK_RATIO){plan[r][c]={rock:true};continue;}
+      let tier=rollRubbleTier();
+      if(avoidMatches&&conn(r,c,tier)>=3){const alt=[1,2,3,4].filter(t=>t!==tier&&conn(r,c,t)<3);if(alt.length)tier=alt[Math.floor(Math.random()*alt.length)];}
+      plan[r][c]={tier};
+    }
+  }
+  return plan;
+}
+
+// 配置planからタイルを生成。animate=trueなら盤面の上から「ドサドサ」落としてくる
+async function spawnRubble(plan,animate){
+  const made=[];
+  for(let c=0;c<COLS;c++)for(let r=0;r<ROWS;r++){
+    const cell=plan[r][c];if(!cell||grid[r][c])continue;
+    const id=uid++;
+    const startR=animate?r-ROWS:r; // 盤面の高さぶん上から落とす（列の積み形を保ったまま降下）
+    const t=cell.rock?{id,tier:0,r:startR,c,rock:true,hp:1}:{id,tier:cell.tier,r:startR,c};
+    tiles[id]=t;grid[r][c]=id;paint(t);
+    made.push({id,finalR:r});
+  }
+  if(animate){
+    await sleep(40); // 上の位置を確定させてから落とす（CSSトランジションで降下）
+    SFX.rise();shake();
+    for(const m of made){if(tiles[m.id])tiles[m.id].r=m.finalR;}
+    render();
+    await sleep(440);
+  }else render();
+}
+
+// ─ 初期盤面セットアップ（瓦礫を上から落として組む。開始盤面は3揃いを作らず連鎖もしない＝静かに考えるスタート） ─
+async function setupStage(stage){
+  busy=true;
   grid=Array.from({length:ROWS},()=>Array(COLS).fill(0));
   tiles={};uid=1;activeDropId=0;
   tilesEl.innerHTML='';
   const dl=document.createElement('div');dl.className='danger-line';dl.id='dangerLine';tilesEl.appendChild(dl);
   const lb=document.createElement('div');lb.className='danger-label';lb.id='dangerLabel';lb.textContent='⚠ DANGER';tilesEl.appendChild(lb);
   requestAnimationFrame(()=>{const d=document.getElementById('dangerLine'),l=document.getElementById('dangerLabel');if(d)d.style.top=topOf(DANGER_ROW);if(l)l.style.top=topOf(DANGER_ROW);});
-  // 波カウントリセット（ステージ移行時は加速もリセット）
   resetWaveInterval();
-  const cfg=stage<=TOTAL_STAGES?STAGE_CONFIG[stage]:STAGE_CONFIG[TOTAL_STAGES];
-  if(!cfg){render();return;}
-  // 入り乱れ配置：下mixRows行にブロック・動物・空マスをランダム生成
-  const{mixRows,blockRatio}=cfg;
-  const startR=ROWS-mixRows;
-  for(let r=startR;r<ROWS;r++){
-    for(let c=0;c<COLS;c++){
-      if(grid[r][c])continue;
-      const roll=Math.random();
-      if(roll<blockRatio){
-        spawnBlockAt(r,c);
-      }else if(roll<blockRatio+0.55){
-        const gt=(rr,cc)=>{const id=grid[rr]?.[cc];return(id&&tiles[id]&&!tiles[id].rock)?tiles[id].tier:0;};
-        const conn=(sr,sc,t)=>{const seen=new Set(),q=[[sr,sc]];seen.add(sr*100+sc);let n=0;while(q.length){const[cr,cc]=q.pop();n++;if(n>=3)return n;for(const[dr,dc]of[[1,0],[-1,0],[0,1],[0,-1]]){const nr=cr+dr,nc=cc+dc,k=nr*100+nc;if(nr<0||nr>=ROWS||nc<0||nc>=COLS||seen.has(k))continue;if(gt(nr,nc)===t){seen.add(k);q.push([nr,nc]);}}}return n;};
-        const r2=Math.random();let tier=r2<0.60?1:r2<0.90?2:3;
-        if(conn(r,c,tier)>=3){const alt=[1,2,3].filter(t=>t!==tier&&conn(r,c,t)<3);if(alt.length)tier=alt[Math.floor(Math.random()*alt.length)];}
-        spawnAnimalAt(r,c,tier);
-      }
-      // 残りは空マス
-    }
-  }
-  applyGravity();render();
-  // 配置後に3揃いが出来ていたら自動解消（非同期で安全に処理）
-  setTimeout(async()=>{
-    if(busy)return;busy=true;
-    try{await resolveBoard();}finally{busy=false;}
-    render();
-  },100);
+  await spawnRubble(planRubble(true),true);
+  busy=false;
 }
 function spawnBlockAt(r,c){
   if(grid[r][c])return;
@@ -630,7 +647,7 @@ function newGame(){
   updateQueue();updateRiseCounter();
   requestAnimationFrame(()=>{const dl=document.getElementById('dangerLine'),lb=document.getElementById('dangerLabel');if(dl)dl.style.top=topOf(DANGER_ROW);if(lb)lb.style.top=topOf(DANGER_ROW);});
   BGM.start(currentStage);
-
+  setupStage(currentStage); // 開始盤面も瓦礫ジェネレーターで作る
 }
 
 // ─ タイル描画 ─
@@ -715,11 +732,11 @@ function applyGravity(){for(let c=0;c<COLS;c++){const stack=[];for(let r=ROWS-1;
 
 // ─ resolveBoard ─
 async function resolveBoard(){
-  let chain=0;
+  let chain=0,bornHippo=false;
   while(true){
     const comps=findComponents();if(comps.length===0)break;
     chain++;const mult=Math.min(chain,MAX_CHAIN);
-    let createdHippo=false,bigLeap=false,superLeap=false;
+    let bigLeap=false,superLeap=false;
     const removeSet=new Set(),survBumps=[];
     const hippoBirths=[]; // 今チェーンで誕生したカバ：{r,c}
     for(const cp of comps){
@@ -742,9 +759,8 @@ async function resolveBoard(){
       if(skillKey)addActiveSkill(skillKey);
       // カバ誕生：IDフラグで管理して演出後に確実削除
       if(newTier===MAX_TIER&&prev<MAX_TIER){
-        createdHippo=true;
         hippoBirths.push(sid); // IDのみ保持（座標は使わない）
-        tiles[sid].pendingHippo=true; // 削除待ちフラグ
+        tiles[sid].pendingHippo=true; // この合体は進化させずカバ誕生演出へ回す目印
         addKill(MAX_TIER);
       }
       else if(rise>=3)superLeap=true;else if(rise>=2)bigLeap=true;
@@ -762,36 +778,28 @@ async function resolveBoard(){
     else if(bigLeap){floatEl('chain','✨ 大進化！');SFX.bigmerge(3);burst();shake();}
     else if(chain>=2){floatEl('chain','🔥 '+chain+'チェイン！');SFX.chain(chain);if(chain>=3)shake();}
     else if(survBumps.filter(b=>!tiles[b.id]?.pendingHippo).length>0){const nb=survBumps.find(b=>!tiles[b.id]?.pendingHippo);SFX.merge(nb?tiles[nb.id]?.tier||2:2);}
-    // ─ カバ誕生演出（0.9秒見せ場）─ IDベース・座標に依存しない ─
+    // ─ カバ誕生演出（0.9秒見せ場）─ 見せたら全破壊へ（盤面消去は呼び出し元のhandleHippoBornが担う） ─
     if(hippoBirths.length>0){
-      // カバタイルにアニメーションクラスを付与
       for(const sid of hippoBirths){
         if(!tiles[sid])continue;
-        tiles[sid].tier=MAX_TIER;tiles[sid].bump=false;
+        tiles[sid].tier=MAX_TIER;tiles[sid].bump=false;tiles[sid].pendingHippo=false;
         const el=document.getElementById('tile-'+sid);
         if(el)el.classList.add('hippo-born');
+        hippoMade++;
       }
-      render();
+      render();updateStageUI();
       SFX.itemHippo(2);await showCutin('コビトカバ誕生！','');
       floatEl('toast','🦛 コビトカバ誕生！');SFX.bigmerge(5);burst();burst();shake();
       await sleep(900); // 見せ場
-      // IDで追跡して確実に削除
-      for(const sid of hippoBirths){
-        const t=tiles[sid];
-        if(!t)continue;
-        if(grid[t.r]&&grid[t.r][t.c]===sid)grid[t.r][t.c]=0; // 座標が生きていれば消す
-        // 念のため全グリッドからIDを検索して削除
-        for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){if(grid[r][c]===sid)grid[r][c]=0;}
-        removeFade(sid);
-        hippoMade++;
-        updateStageUI();
-      }
-      render();
+      bornHippo=true;
+      maxChain=Math.max(maxChain,chain);
+      break; // この盤面は全破壊されるので以降のチェーンは処理しない
     }
     maxChain=Math.max(maxChain,chain);
     updateStageUI();
     await sleep(160);applyGravity();render();await sleep(225);
   }
+  return bornHippo;
 }
 
 // ─ drop ─
@@ -804,8 +812,9 @@ async function drop(col){
     const id=uid++;const t={id,tier:current,r:-1,c:col};activeDropId=id;
     tiles[id]=t;paint(t);await sleep(25);if(gameVersion!==gv)return;
     t.r=landR;grid[landR][col]=id;paint(t);SFX.drop();await sleep(200);if(gameVersion!==gv)return;
-    await resolveBoard();if(gameVersion!==gv)return;
+    const born=await resolveBoard();if(gameVersion!==gv)return;
     activeDropId=0;
+    if(born)await handleHippoBorn();if(gameVersion!==gv)return;
     await checkStageClear();if(gameVersion!==gv)return;
     if(isDanger()){endGame('💥','ブロックがあふれちゃった…');return;}
     const wasClose=Object.values(tiles).some(t=>t.r<=DANGER_ROW);
@@ -847,9 +856,8 @@ async function riseStep(){
   await doOneRise();
   applyGravity();render();
   await sleep(200);
-  await resolveBoard();
-  // 波後にpendingHippoになったタイルを演出処理
-  await processPendingHippos();
+  const born=await resolveBoard();
+  if(born)await handleHippoBorn();
   await checkStageClear();
 }
 
