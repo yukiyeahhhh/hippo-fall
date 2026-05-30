@@ -22,6 +22,8 @@ const STAGE_CONFIG=[
 ];
 const TOTAL_STAGES=5;
 const ANIMALS=[null,{emo:'🐹',nm:'ハムスター',cls:'t1'},{emo:'🐿️',nm:'リス',cls:'t2'},{emo:'🦆',nm:'アヒル',cls:'t3'},{emo:'🦦',nm:'カワウソ',cls:'t4'},{emo:'🦛',nm:'コビトカバ',cls:'t5'}];
+// ギミック（おじゃまブロック同様、重力で積む障害物。合体不可・カバの全破壊で一緒に消える）
+const GIMMICKS={walnut:{emo:'🌰',nm:'クルミ',cls:'walnut'},shell:{emo:'🦪',nm:'貝殻',cls:'shell'}};
 const MAX_TIER=5,MAX_CHAIN=9;
 const LS_KEY='animalDrop_roguelite_v2';
 
@@ -626,6 +628,19 @@ function planRubble(avoidMatches){
       plan[r][c]={tier};
     }
   }
+  // ギミックを混ぜる：🌰クルミ1個確定、🦪貝殻35%で1個。
+  // 生成直後に割れないよう、トリガー動物の隣は避けて置く（クルミはリス、貝殻はカワウソの隣を避ける）
+  const nbHasTier=(r,c,t)=>{for(const[dr,dc]of[[1,0],[-1,0],[0,1],[0,-1]]){const cell=plan[r+dr]?.[c+dc];if(cell&&!cell.rock&&!cell.gimmick&&cell.tier===t)return true;}return false;};
+  const filled=[];
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(plan[r][c])filled.push([r,c]);
+  for(let i=filled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[filled[i],filled[j]]=[filled[j],filled[i]];}
+  const placeGimmick=(kind,trig)=>{
+    let cell=filled.find(([r,c])=>plan[r][c]&&!plan[r][c].gimmick&&!nbHasTier(r,c,trig));
+    if(!cell)cell=filled.find(([r,c])=>plan[r][c]&&!plan[r][c].gimmick);
+    if(cell)plan[cell[0]][cell[1]]={gimmick:kind};
+  };
+  placeGimmick('walnut',2);
+  if(Math.random()<0.35)placeGimmick('shell',4);
   return plan;
 }
 
@@ -636,7 +651,7 @@ async function spawnRubble(plan,animate){
     const cell=plan[r][c];if(!cell||grid[r][c])continue;
     const id=uid++;
     const startR=animate?r-ROWS:r; // 盤面の高さぶん上から落とす（列の積み形を保ったまま降下）
-    const t=cell.rock?{id,tier:0,r:startR,c,rock:true,hp:1}:{id,tier:cell.tier,r:startR,c};
+    const t=cell.gimmick?{id,tier:0,r:startR,c,gimmick:cell.gimmick}:cell.rock?{id,tier:0,r:startR,c,rock:true,hp:1}:{id,tier:cell.tier,r:startR,c};
     tiles[id]=t;grid[r][c]=id;paint(t);
     made.push({id,finalR:r});
   }
@@ -667,6 +682,12 @@ function spawnBlockAt(r,c){
   if(grid[r][c])return;
   const id=uid++;
   const t={id,tier:0,r,c,rock:true,spawn:true,hp:1};
+  tiles[id]=t;grid[r][c]=id;paint(t);
+}
+function spawnGimmickAt(r,c,kind){
+  if(grid[r][c])return;
+  const id=uid++;
+  const t={id,tier:0,r,c,gimmick:kind,spawn:true};
   tiles[id]=t;grid[r][c]=id;paint(t);
 }
 function spawnAnimalAt(r,c,tier){
@@ -715,7 +736,7 @@ function topOf(r){return`calc(${r} * ((100% - var(--gap)*${ROWS-1})/${ROWS} + va
 function isDanger(){for(const id in tiles)if(tiles[id].r<DANGER_ROW)return true;return false;}
 function checkClose(){let c=false;for(const id in tiles)if(tiles[id].r===DANGER_ROW)c=true;boardEl.classList.toggle('close',c);}
 function emptyCount(){let n=0;for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(!grid[r][c])n++;return n;}
-function isSpecial(t){return t&&t.rock;}
+function isSpecial(t){return t&&(t.rock||t.gimmick);}
 // アイテム・カバ効果での消去：全tier対象、スコア付与、カバ誘発
 function clearWithBonuses(targets/*[[r,c],...]*/, bgFlash=false){
   // BFSで消去対象を収集（カバを踏んだら即その行を展開）
@@ -746,7 +767,13 @@ function clearWithBonuses(targets/*[[r,c],...]*/, bgFlash=false){
 function ensureEl(t){let el=document.getElementById('tile-'+t.id);if(!el){el=document.createElement('div');el.id='tile-'+t.id;el.className='tile';el.innerHTML='<div class="inner"><span class="emo"></span><span class="nm"></span></div>';el.style.width=`calc((100% - var(--gap)*${COLS-1})/${COLS})`;el.style.height=`calc((100% - var(--gap)*${ROWS-1})/${ROWS})`;el.style.transition='none';el.style.left=leftOf(t.c);el.style.top=topOf(t.r);tilesEl.insertBefore(el,tilesEl.firstChild);void el.offsetWidth;el.style.transition='';}return el;}
 function paint(t){
   const el=ensureEl(t);
-  if(t.rock){
+  if(t.gimmick){
+    const g=GIMMICKS[t.gimmick];
+    el.classList.remove('t1','t2','t3','t4','t5','rock');
+    el.classList.add('gimmick',g.cls);
+    el.querySelector('.emo').textContent=g.emo;el.querySelector('.nm').textContent=g.nm;
+  }
+  else if(t.rock){
     el.classList.remove('t1','t2','t3','t4','t5');
     el.classList.add('rock');
     el.querySelector('.emo').textContent='⬛';el.querySelector('.nm').textContent='ブロック';
@@ -789,20 +816,75 @@ function pickSurvivor(cells){if(activeDropId){for(const c of cells){if(grid[c.r]
 function tiersJump(size){return size>=5?2:1;} // 飛び級進化：5個以上同時合体で+2段階
 function applyGravity(){for(let c=0;c<COLS;c++){const stack=[];for(let r=ROWS-1;r>=0;r--)if(grid[r][c])stack.push(grid[r][c]);for(let r=0;r<ROWS;r++)grid[r][c]=0;for(let i=0;i<stack.length;i++){const r=ROWS-1-i;grid[r][c]=stack[i];tiles[stack[i]].r=r;tiles[stack[i]].c=c;}}}
 
-// ─ resolveBoard ─
+// 4方向の隣にtierの動物がいるか（ギミックの割れ判定用）
+function adjacentHasTier(r,c,tier){
+  for(const[dr,dc]of[[1,0],[-1,0],[0,1],[0,-1]]){
+    const nr=r+dr,nc=c+dc;if(nr<0||nr>=ROWS||nc<0||nc>=COLS)continue;
+    const id=grid[nr][nc];
+    if(id&&tiles[id]&&!tiles[id].rock&&!tiles[id].gimmick&&tiles[id].tier===tier)return true;
+  }
+  return false;
+}
+// 進化でそのtierになったときのスキルチャージ
+function chargeForTier(t){if(t===2)addActiveSkill('squirrel');else if(t===3)addActiveSkill('duck_march');else if(t===4)addActiveSkill('refresh');}
+// 割れる条件を満たしたギミックを処理。割れたらtrue（盤面が変わったので再収束する）
+async function breakReadyGimmicks(){
+  const walnuts=[],shells=[];
+  for(const id in tiles){const t=tiles[id];if(!t)continue;
+    if(t.gimmick==='walnut'&&adjacentHasTier(t.r,t.c,2))walnuts.push(id);
+    else if(t.gimmick==='shell'&&adjacentHasTier(t.r,t.c,4))shells.push(id);
+  }
+  if(walnuts.length===0&&shells.length===0)return false;
+  // 🌰クルミ：消滅＋3スキル各+50%（合体は起こさない＝チャージと空マス化のみ）
+  for(const id of walnuts){const t=tiles[id];grid[t.r][t.c]=0;removeFade(Number(id));for(const k of Object.keys(activeSkills))addSkillGauge(k,0.5);}
+  if(walnuts.length){SFX.itemSpawn();floatEl('item','🌰 クルミ！ スキル+50%');burst();}
+  // 🦪貝殻：消滅＋周囲8マスの動物が一斉に+1進化（カバ誕生まで繋がり得る）
+  const bumped=new Set();
+  for(const id of shells){
+    const st=tiles[id],sr=st.r,sc=st.c;grid[sr][sc]=0;removeFade(Number(id));
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+      if(!dr&&!dc)continue;const nr=sr+dr,nc=sc+dc;if(nr<0||nr>=ROWS||nc<0||nc>=COLS)continue;
+      const aid=grid[nr][nc];
+      if(aid&&tiles[aid]&&!tiles[aid].rock&&!tiles[aid].gimmick&&!bumped.has(aid)&&tiles[aid].tier<MAX_TIER){
+        tiles[aid].tier++;tiles[aid].skillHit=true;bumped.add(aid);chargeForTier(tiles[aid].tier);
+      }
+    }
+  }
+  if(shells.length){SFX.itemOtter();floatEl('item','🦪 貝殻！ まわりが進化！');burst();shake();}
+  render();await sleep(350);
+  applyGravity();render();await sleep(150);
+  return true;
+}
+// 盤面にいるカバ(T5)を誕生演出（合体・貝殻どちらでできても）。消去は呼び出し元のhandleHippoBornが担う
+async function birthAnyHippos(){
+  const births=[];
+  for(const id in tiles){const t=tiles[id];if(t&&!t.rock&&!t.gimmick&&t.tier>=MAX_TIER)births.push(id);}
+  if(births.length===0)return false;
+  for(const id of births){const el=document.getElementById('tile-'+id);if(el)el.classList.add('hippo-born');hippoMade++;addKill(MAX_TIER);}
+  render();updateStageUI();
+  SFX.itemHippo(2);await showCutin('コビトカバ誕生！','');
+  floatEl('toast','🦛 コビトカバ誕生！');SFX.bigmerge(5);burst();burst();shake();
+  await sleep(900);
+  return true;
+}
+
+// ─ resolveBoard：合体・ギミック・カバ誕生を盤面が落ち着くまで処理。カバが出たらtrueを返す ─
 async function resolveBoard(){
   let chain=0,bornHippo=false;
   while(true){
-    const comps=findComponents();if(comps.length===0)break;
-    chain++;const mult=Math.min(chain,MAX_CHAIN);
-    let bigLeap=false,superLeap=false;
+    const comps=findComponents();
+    if(comps.length===0){
+      if(await breakReadyGimmicks())continue; // ギミックが割れた→盤面変化、再収束
+      if(await birthAnyHippos())bornHippo=true; // 貝殻等で生まれたカバを拾う
+      break;
+    }
+    chain++;
+    let bigLeap=false;
     const removeSet=new Set(),survBumps=[];
-    const hippoBirths=[]; // 今チェーンで誕生したカバ：{r,c}
     for(const cp of comps){
-      if(cp.tier>=MAX_TIER)continue; // カバの連結成分はそもそも作られないが念のため
+      if(cp.tier>=MAX_TIER)continue;
       const surv=pickSurvivor(cp.cells),sid=grid[surv.r][surv.c];
       const size=cp.cells.length,prev=cp.tier,newTier=Math.min(prev+tiersJump(size),MAX_TIER),rise=newTier-prev;
-      // 生存セル以外をremoveSetへ
       for(const cell of cp.cells){
         if(cell.r===surv.r&&cell.c===surv.c)continue;
         const cid=grid[cell.r][cell.c];grid[cell.r][cell.c]=0;
@@ -810,53 +892,20 @@ async function resolveBoard(){
         removeSet.add(cid);addKill(cp.tier);
       }
       survBumps.push({id:sid,tier:newTier});
-      // ─ アクティブスキル獲得（進化1回ぶん） ─
-      let skillKey=null;
-      if(newTier===2)skillKey='squirrel';
-      else if(newTier===3)skillKey='duck_march';
-      else if(newTier===4)skillKey='refresh';
-      if(skillKey)addActiveSkill(skillKey);
-      // カバ誕生：IDフラグで管理して演出後に確実削除
-      if(newTier===MAX_TIER&&prev<MAX_TIER){
-        hippoBirths.push(sid); // IDのみ保持（座標は使わない）
-        tiles[sid].pendingHippo=true; // この合体は進化させずカバ誕生演出へ回す目印
-        addKill(MAX_TIER);
-      }
-      else if(rise>=3)superLeap=true;else if(rise>=2)bigLeap=true;
+      chargeForTier(newTier);
+      if(rise>=2)bigLeap=true;
     }
     render();await sleep(205);
     removeSet.forEach(id=>{if(id)removeFade(id);});
-    // カバ以外を先に進化
-    survBumps.forEach(b=>{
-      if(tiles[b.id]?.pendingHippo)return; // カバは後で処理
-      tiles[b.id].tier=b.tier;tiles[b.id].bump=true;
-    });
+    survBumps.forEach(b=>{if(tiles[b.id]){tiles[b.id].tier=b.tier;tiles[b.id].bump=true;}});
     render();
-    // ─ 通常エフェクト ─
-    if(superLeap){floatEl('chain','⚡ 超進化！');SFX.bigmerge(4);burst();burst();shake();}
-    else if(bigLeap){floatEl('chain','✨ 大進化！');SFX.bigmerge(3);burst();shake();}
+    if(bigLeap){floatEl('chain','✨ 大進化！');SFX.bigmerge(3);burst();shake();}
     else if(chain>=2){floatEl('chain','🔥 '+chain+'チェイン！');SFX.chain(chain);if(chain>=3)shake();}
-    else if(survBumps.filter(b=>!tiles[b.id]?.pendingHippo).length>0){const nb=survBumps.find(b=>!tiles[b.id]?.pendingHippo);SFX.merge(nb?tiles[nb.id]?.tier||2:2);}
-    // ─ カバ誕生演出（0.9秒見せ場）─ 見せたら全破壊へ（盤面消去は呼び出し元のhandleHippoBornが担う） ─
-    if(hippoBirths.length>0){
-      for(const sid of hippoBirths){
-        if(!tiles[sid])continue;
-        tiles[sid].tier=MAX_TIER;tiles[sid].bump=false;tiles[sid].pendingHippo=false;
-        const el=document.getElementById('tile-'+sid);
-        if(el)el.classList.add('hippo-born');
-        hippoMade++;
-      }
-      render();updateStageUI();
-      SFX.itemHippo(2);await showCutin('コビトカバ誕生！','');
-      floatEl('toast','🦛 コビトカバ誕生！');SFX.bigmerge(5);burst();burst();shake();
-      await sleep(900); // 見せ場
-      bornHippo=true;
-      maxChain=Math.max(maxChain,chain);
-      break; // この盤面は全破壊されるので以降のチェーンは処理しない
-    }
-    maxChain=Math.max(maxChain,chain);
-    updateStageUI();
-    await sleep(160);applyGravity();render();await sleep(225);
+    else{const nb=survBumps[0];if(nb&&tiles[nb.id])SFX.merge(tiles[nb.id].tier||2);}
+    maxChain=Math.max(maxChain,chain);updateStageUI();
+    // カバ判定（合体でT5になった）→ 見せ場のあと全破壊へ
+    if(await birthAnyHippos()){bornHippo=true;break;}
+    await sleep(140);applyGravity();render();await sleep(210);
   }
   return bornHippo;
 }
@@ -895,8 +944,15 @@ async function drop(col){
 
 // ─ riseStep ─
 async function doOneRise(){
-  // リス「ひとやすみ」の効果中はこの波だけブロックを出さない（動物だけ）
+  // リス「ひとやすみ」の効果中はこの波だけブロックを出さない（動物だけ。ギミックも出さない）
   const noBlocks=nextWaveNoBlocks;nextWaveNoBlocks=false;
+  // この波に混ぜるギミック：🌰クルミ15%・🦪貝殻5%（それぞれ最大1個）
+  const gimCols={};
+  if(!noBlocks){
+    const free=[...Array(COLS).keys()];
+    if(Math.random()<0.15){gimCols[free.splice(Math.floor(Math.random()*free.length),1)[0]]='walnut';}
+    if(Math.random()<0.05&&free.length){gimCols[free.splice(Math.floor(Math.random()*free.length),1)[0]]='shell';}
+  }
   // 波システム：全列一気に1行せり上がる
   for(let c=0;c<COLS;c++){
     if(grid[0][c])removeFade(grid[0][c]);
@@ -905,9 +961,9 @@ async function doOneRise(){
       if(grid[r][c])tiles[grid[r][c]].r=r;
     }
     grid[ROWS-1][c]=0;
-    const isRock=noBlocks?false:Math.random()<getRockChance();
-    const id=uid++;
-    const t={id,tier:isRock?0:rollRiseTier(),r:ROWS-1,c,spawn:true,rock:isRock,hp:1};
+    const id=uid++;let t;
+    if(gimCols[c])t={id,tier:0,r:ROWS-1,c,spawn:true,gimmick:gimCols[c]};
+    else{const isRock=noBlocks?false:Math.random()<getRockChance();t={id,tier:isRock?0:rollRiseTier(),r:ROWS-1,c,spawn:true,rock:isRock,hp:1};}
     tiles[id]=t;grid[ROWS-1][c]=id;
   }
 }

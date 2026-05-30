@@ -242,6 +242,12 @@
     <button class="dp-btn" onclick="(()=>{let placed=0;for(let c=0;c<COLS&&placed<2;c++){if(!grid[ROWS-1][c]){spawnAnimalAt(ROWS-1,c,4);placed++;}}current=4;next=4;updateQueue();render();})()">🦦×2+次</button>
     <button class="dp-btn" onclick="if(!busy&&!gamePaused){busy=true;showStageClearAndAdvance().finally(()=>busy=false);}">⏭ 次ステージへ</button>
   </div>
+  <div style="display:flex;gap:4px;margin-top:4px;">
+    <button class="dp-btn" onclick="(()=>{for(let c=0;c<COLS;c++){if(!grid[ROWS-1][c]){spawnGimmickAt(ROWS-1,c,'walnut');break;}}})()">🌰出す</button>
+    <button class="dp-btn" onclick="(()=>{for(let c=0;c<COLS;c++){if(!grid[ROWS-1][c]){spawnGimmickAt(ROWS-1,c,'shell');break;}}})()">🦪出す</button>
+    <button class="dp-btn" onclick="current=2;next=2;updateQueue()">次=🐿️</button>
+    <button class="dp-btn" onclick="current=4;next=4;updateQueue()">次=🦦</button>
+  </div>
   <b style="display:block;margin:8px 0 4px;">カットインテスト</b>
   <div style="display:flex;flex-wrap:wrap;gap:4px;">
     <button class="dp-btn" onclick="showCutin('アヒルの大行進！','')">🦆大行進</button>
