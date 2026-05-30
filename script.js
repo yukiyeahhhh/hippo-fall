@@ -48,11 +48,12 @@ function saveGameLog(){try{localStorage.setItem(LS_LOG_KEY,JSON.stringify(gameLo
 const gameLog=loadGameLog();
 
 // ─ アクティブスキル（進化で獲得・盤面外スロット） ─
-const SKILL_GAUGE_PER_EVOLVE=1/3; // 進化1回でゲージが33%溜まる（3回で100%）
+// charge＝そのスキル元の動物が1回できるたびに溜まる量。作りにくい動物ほど一発が太い
+// （リス+12.5%＝8回／アヒル+20%＝5回／カワウソ+50%＝2回。素合体だけだとアヒル以上は遠い＝クルミ前提）
 let activeSkills={
-  squirrel:   {emoji:'🐿️', name:'ひとやすみ', gauge:0, fromTier:2},
-  duck_march: {emoji:'🦆', name:'大行進',     gauge:0, fromTier:3},
-  refresh:    {emoji:'🦦', name:'おてだま',   gauge:0, fromTier:4}
+  squirrel:   {emoji:'🐿️', name:'ひとやすみ', gauge:0, fromTier:2, charge:0.125},
+  duck_march: {emoji:'🦆', name:'大行進',     gauge:0, fromTier:3, charge:0.20},
+  refresh:    {emoji:'🦦', name:'おてだま',   gauge:0, fromTier:4, charge:0.50}
 };
 let aiming=null; // 照準モード {key, picks:[ids]}。アヒル/カワウソが対象選択を待つ状態
 
@@ -323,7 +324,7 @@ function addSkillGauge(key,amount){
   if(prev<1&&s.gauge>=1)floatEl('item',s.emoji+' '+s.name+' MAX！');
   updateSkillSlotsUI();
 }
-function addActiveSkill(key){addSkillGauge(key,SKILL_GAUGE_PER_EVOLVE);}
+function addActiveSkill(key){const s=activeSkills[key];if(s)addSkillGauge(key,s.charge);}
 
 // ─ UI更新（プレースホルダ：フェーズCで本実装） ─
 function updateSkillSlotsUI(){
