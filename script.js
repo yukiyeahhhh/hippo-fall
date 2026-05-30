@@ -41,6 +41,7 @@ let waveCount=0; // これまでに来た波の回数
 let survivedDrops=0; // 生き残った手数
 let dropsUntilWave=10; // 次の波までの手数
 let currentWaveInterval=10; // 現在の波間隔
+let nextWaveNoBlocks=false; // リス「ひとやすみ」：次の1回の波はブロックを出さない
 const LS_LOG_KEY='animalDrop_gamelog_v1';
 function loadGameLog(){try{return JSON.parse(localStorage.getItem(LS_LOG_KEY)||'[]');}catch(e){return[];}}
 function saveGameLog(){try{localStorage.setItem(LS_LOG_KEY,JSON.stringify(gameLog));}catch(e){}}
@@ -49,9 +50,9 @@ const gameLog=loadGameLog();
 // ─ アクティブスキル（進化で獲得・盤面外スロット） ─
 const SKILL_GAUGE_PER_EVOLVE=1/3; // 進化1回でゲージが33%溜まる（3回で100%）
 let activeSkills={
-  squirrel:   {emoji:'🐿️', name:'ギリギリセーフ', gauge:0, fromTier:2},
-  duck_march: {emoji:'🦆', name:'大行進',         gauge:0, fromTier:3},
-  refresh:    {emoji:'🦦', name:'ぐるぐるシャッフル', gauge:0, fromTier:4}
+  squirrel:   {emoji:'🐿️', name:'ひとやすみ', gauge:0, fromTier:2},
+  duck_march: {emoji:'🦆', name:'大行進',     gauge:0, fromTier:3},
+  refresh:    {emoji:'🦦', name:'おてだま',   gauge:0, fromTier:4}
 };
 
 // ─ ステージ進行 ─
@@ -340,9 +341,9 @@ function updateSkillSlotsUI(){
 }
 // ─ カットイン演出（基盤） ─
 const CUTIN_IMAGES={
-  'リスのギリギリセーフ！': 'assets/cutin_squirrel.webp',
+  'リスのひとやすみ！':    'assets/cutin_squirrel.webp',
   'アヒルの大行進！':      'assets/cutin_duck_march.webp',
-  'ぐるぐるシャッフル！':  'assets/cutin_refresh.webp',
+  'カワウソのおてだま！':  'assets/cutin_refresh.webp',
   'コビトカバ誕生！':      'assets/cutin_hippo_born.webp',
 };
 (()=>{Object.values(CUTIN_IMAGES).forEach(src=>{const i=new Image();i.src=src;});})();
@@ -371,7 +372,7 @@ function activateSkill(key){
   busy=true;
   (async()=>{
     try{
-      if(key==='squirrel')await applySquirrelSave();
+      if(key==='squirrel')await applySquirrelRest();
       else if(key==='duck_march')await applyDuckMarch();
       else if(key==='refresh')await applyBoardRefresh();
       applyGravity();render();await sleep(200);
@@ -385,17 +386,13 @@ function activateSkill(key){
 }
 // ─ アクティブスキル効果 ─
 
-// 🐿️ リスのギリギリセーフ：デンジャーライン付近2行のブロックを全破壊
-async function applySquirrelSave(){
-  SFX.itemSquirrel();await showCutin('リスのギリギリセーフ！','');
-  const toDestroy=[];
-  for(let row=DANGER_ROW;row<=DANGER_ROW+1;row++){
-    if(row>=ROWS)continue;
-    for(let c=0;c<COLS;c++){const id=grid[row][c];if(id&&tiles[id]&&tiles[id].rock)toDestroy.push(id);}
-  }
-  if(toDestroy.length===0){floatEl('toast','🐿️ ピンチなし！');return;}
-  for(const id of toDestroy){if(!tiles[id])continue;const{r,c}=tiles[id];grid[r][c]=0;removeFade(id);}
-  render();floatEl('item','🐿️ リスのギリギリセーフ！ ブロック×'+toDestroy.length+'破壊！');
+// 🐿️ リスのひとやすみ：せりあがり手数を満タンに巻き戻し、次の1回の波はブロックなし（破壊も降下もしない＝時間稼ぎ）
+async function applySquirrelRest(){
+  SFX.itemSquirrel();await showCutin('リスのひとやすみ！','');
+  resetWaveInterval(); // せりあがり手数を満タンに巻き戻す
+  nextWaveNoBlocks=true; // 次の1回の波は動物だけ
+  updateRiseCounter();
+  floatEl('item','🐿️ せりあがりリセット！');
   await sleep(500);
 }
 
@@ -601,6 +598,7 @@ async function setupStage(stage){
   const lb=document.createElement('div');lb.className='danger-label';lb.id='dangerLabel';lb.textContent='⚠ DANGER';tilesEl.appendChild(lb);
   requestAnimationFrame(()=>{const d=document.getElementById('dangerLine'),l=document.getElementById('dangerLabel');if(d)d.style.top=topOf(DANGER_ROW);if(l)l.style.top=topOf(DANGER_ROW);});
   resetWaveInterval();
+  nextWaveNoBlocks=false;
   await spawnRubble(planRubble(true),true);
   busy=false;
 }
@@ -836,6 +834,8 @@ async function drop(col){
 
 // ─ riseStep ─
 async function doOneRise(){
+  // リス「ひとやすみ」の効果中はこの波だけブロックを出さない（動物だけ）
+  const noBlocks=nextWaveNoBlocks;nextWaveNoBlocks=false;
   // 波システム：全列一気に1行せり上がる
   for(let c=0;c<COLS;c++){
     if(grid[0][c])removeFade(grid[0][c]);
@@ -844,7 +844,7 @@ async function doOneRise(){
       if(grid[r][c])tiles[grid[r][c]].r=r;
     }
     grid[ROWS-1][c]=0;
-    const isRock=Math.random()<getRockChance();
+    const isRock=noBlocks?false:Math.random()<getRockChance();
     const id=uid++;
     const t={id,tier:isRock?0:rollRiseTier(),r:ROWS-1,c,spawn:true,rock:isRock,hp:1};
     tiles[id]=t;grid[ROWS-1][c]=id;

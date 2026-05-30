@@ -79,7 +79,7 @@
         <!-- 下部：スキルスロット縦長 -->
         <div class="lv-side skill-slot-big" id="slot-squirrel" onclick="activateSkill('squirrel')">
           <span class="la-big">🐿️</span>
-          <div class="skill-sname">セーフ</div>
+          <div class="skill-sname">やすみ</div>
           <div class="skill-charge-bar"><div class="scbf" id="scbf-squirrel"></div></div>
           <span class="lct">0%</span>
         </div>
@@ -91,7 +91,7 @@
         </div>
         <div class="lv-side skill-slot-big" id="slot-refresh" onclick="activateSkill('refresh')">
           <span class="la-big">🦦</span>
-          <div class="skill-sname">シャッフル</div>
+          <div class="skill-sname">おてだま</div>
           <div class="skill-charge-bar"><div class="scbf" id="scbf-refresh"></div></div>
           <span class="lct">0%</span>
         </div>
@@ -234,6 +234,7 @@
   <button class="dp-btn" style="width:100%;margin-top:4px;background:#e8915b;" onclick="newGame()">↺ 反映してリスタート</button>
   <b style="display:block;margin:8px 0 4px;">ゲージ補充</b>
   <div style="display:flex;gap:4px;">
+    <button class="dp-btn" onclick="activeSkills.squirrel.gauge=1;updateSkillSlotsUI()">🐿️MAX</button>
     <button class="dp-btn" onclick="activeSkills.duck_march.gauge=1;updateSkillSlotsUI()">🦆MAX</button>
     <button class="dp-btn" onclick="activeSkills.refresh.gauge=1;updateSkillSlotsUI()">🦦MAX</button>
     <button class="dp-btn" onclick="for(let c=0;c<COLS;c++)spawnBlockAt(ROWS-1,c);render()">ブロック出す</button>
