@@ -48,7 +48,8 @@
   .aim-banner.show{display:block;animation:pop .2s ease;}
   .board.aiming{outline:3px solid rgba(255,170,60,.85);outline-offset:-3px;}
   .skill-slot-big.skill-aiming{background:rgba(255,170,60,.55)!important;animation:linepulse .7s ease infinite;}
-  .tile.aim-pick{outline:3px solid #ffd24a;outline-offset:-2px;z-index:9;}
+  .tile.aim-pick{box-shadow:0 0 0 4px #ffd24a,0 0 16px 4px rgba(255,190,30,.95)!important;z-index:12;animation:aimpulse .55s ease-in-out infinite;}
+  @keyframes aimpulse{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
   .danger-line{position:absolute;left:0;right:0;height:3px;border-radius:2px;pointer-events:none;z-index:4;background:repeating-linear-gradient(90deg,var(--danger) 0,var(--danger) 9px,transparent 9px,transparent 16px);}
   .danger-label{position:absolute;right:0;font-size:9px;font-weight:800;color:var(--danger);background:rgba(255,235,235,.9);padding:1px 5px;border-radius:5px;pointer-events:none;z-index:4;transform:translateY(-100%);}
   @keyframes linepulse{0%,100%{opacity:1;}50%{opacity:.25;}}

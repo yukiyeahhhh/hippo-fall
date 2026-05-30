@@ -374,13 +374,13 @@ function activateSkill(key){
   if(busy||gamePaused||s.gauge<1)return;
   // 照準系（対象選択が要る）
   if(key==='duck_march'){startAiming('duck_march','🦆 大行進：集めたい動物をタップ（もう一度🦆でやめる）');return;}
-  // 即時系（リス・※カワウソは4cで照準化）
+  if(key==='refresh'){startAiming('refresh','🦦 おてだま：入れ替える2匹をタップ（もう一度🦦でやめる）');return;}
+  // 即時系（リス）
   s.gauge=0;updateSkillSlotsUI();
   busy=true;
   (async()=>{
     try{
       if(key==='squirrel')await applySquirrelRest();
-      else if(key==='refresh')await applyBoardRefresh();
       await finishSkillResolve();
     }finally{busy=false;}
   })();
@@ -421,6 +421,22 @@ function handleAimTap(row,col){
     activeSkills.duck_march.gauge=0;updateSkillSlotsUI();
     busy=true;
     (async()=>{try{await runDuckMarch(tier,col);await finishSkillResolve();}finally{busy=false;}})();
+  }else if(aiming.key==='refresh'){
+    // 既に選んだ動物を再タップ→選択解除
+    if(aiming.picks.includes(id)){
+      aiming.picks=aiming.picks.filter(x=>x!==id);
+      const el=document.getElementById('tile-'+id);if(el)el.classList.remove('aim-pick');
+      return;
+    }
+    aiming.picks.push(id);
+    const el=document.getElementById('tile-'+id);if(el)el.classList.add('aim-pick');
+    if(aiming.picks.length>=2){
+      const[a,b]=aiming.picks;
+      cancelAiming();
+      activeSkills.refresh.gauge=0;updateSkillSlotsUI();
+      busy=true;
+      (async()=>{try{await runOtterSwap(a,b);await finishSkillResolve();}finally{busy=false;}})();
+    }
   }
 }
 // ─ アクティブスキル効果 ─
@@ -460,20 +476,17 @@ async function runDuckMarch(tier,anchorCol){
   await sleep(450);
 }
 
-// 🦦 盤面リフレッシュ：ブロックはそのまま、動物の位置だけシャッフル
-async function applyBoardRefresh(){
-  SFX.itemOtter();await showCutin('ぐるぐるシャッフル！','');
-  const positions=[],tiers=[];
-  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-    const id=grid[r][c];
-    if(id&&tiles[id]&&!tiles[id].rock){positions.push({r,c,id});tiers.push(tiles[id].tier);}
-  }
-  if(positions.length<=1){floatEl('toast','🦦 動物が少ない');return;}
-  // tiersをシャッフル
-  for(let i=tiers.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[tiers[i],tiers[j]]=[tiers[j],tiers[i]];}
-  for(let i=0;i<positions.length;i++){tiles[positions[i].id].tier=tiers[i];tiles[positions[i].id].skillHit=true;}
-  render();SFX.itemHamster();floatEl('item','🦦 ぐるぐるシャッフル！');
-  await sleep(700);
+// 🦦 カワウソのおてだま：選んだ動物2匹の位置を入れ替える（入替後に自動合体）
+async function runOtterSwap(idA,idB){
+  SFX.itemOtter();await showCutin('カワウソのおてだま！','');
+  const A=tiles[idA],B=tiles[idB];
+  if(!A||!B||A.rock||B.rock){floatEl('toast','🦦 入れ替えできなかった');return;}
+  const ar=A.r,ac=A.c,br=B.r,bc=B.c;
+  grid[ar][ac]=idB;grid[br][bc]=idA;
+  A.r=br;A.c=bc;B.r=ar;B.c=ac;
+  A.skillHit=true;B.skillHit=true;
+  render();floatEl('item','🦦 おてだま！');
+  await sleep(400);
 }
 
 // ─ 発破職人：ブロック跡地にハムスタースポーン ─
