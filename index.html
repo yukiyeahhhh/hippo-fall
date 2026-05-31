@@ -75,6 +75,9 @@
   .chain .animal:nth-child(9){animation-delay:.6s;font-size:36px;}
   @keyframes hop{0%,100%{transform:translateY(0) scale(1);}40%{transform:translateY(-8px) scale(1.08);}}
   .chain .arr{color:var(--accent);font-size:14px;font-weight:800;}
+  .chain .animal img{width:34px;height:34px;object-fit:contain;display:block;}
+  .chain .animal:nth-child(9) img{width:40px;height:40px;}
+  .bg-fall img{position:absolute;top:-60px;opacity:.22;object-fit:contain;animation:fall linear infinite;}
 
   /* ボタン群 */
   .btns{display:flex;flex-direction:column;gap:12px;width:100%;max-width:300px;}
@@ -114,11 +117,11 @@
     <div class="tagline">つなげて育てて、コビトカバを呼ぼう！</div>
 
     <div class="chain">
-      <span class="animal">🐹</span><span class="arr">▶</span>
-      <span class="animal">🐿️</span><span class="arr">▶</span>
-      <span class="animal">🦆</span><span class="arr">▶</span>
-      <span class="animal">🦦</span><span class="arr">▶</span>
-      <span class="animal">🦛</span>
+      <span class="animal"><img src="assets/tile_t1.webp" alt=""></span><span class="arr">▶</span>
+      <span class="animal"><img src="assets/tile_t2.webp" alt=""></span><span class="arr">▶</span>
+      <span class="animal"><img src="assets/tile_t3.webp" alt=""></span><span class="arr">▶</span>
+      <span class="animal"><img src="assets/tile_t4.webp" alt=""></span><span class="arr">▶</span>
+      <span class="animal"><img src="assets/tile_t5.webp" alt=""></span>
     </div>
 
     <div class="btns">
@@ -138,15 +141,17 @@
   <div class="footer">© どうぶつポトン</div>
 
 <script>
-  const animals=['🐹','🐿️','🦆','🦦','🦛','🧱'];
+  const animals=['tile_t1','tile_t2','tile_t3','tile_t4','tile_t5','gimmick_block'];
   const bg=document.getElementById('bgFall');
   for(let i=0;i<14;i++){
-    const s=document.createElement('span');
-    s.textContent=animals[Math.floor(Math.random()*animals.length)];
+    const s=document.createElement('img');
+    s.src='assets/'+animals[Math.floor(Math.random()*animals.length)]+'.webp';
+    s.alt='';
     s.style.left=Math.random()*100+'%';
     s.style.animationDuration=(7+Math.random()*8)+'s';
     s.style.animationDelay=(-Math.random()*12)+'s';
-    s.style.fontSize=(24+Math.random()*22)+'px';
+    const sz=(28+Math.random()*26)|0;
+    s.style.width=sz+'px';s.style.height=sz+'px';
     bg.appendChild(s);
   }
 
