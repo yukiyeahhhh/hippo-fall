@@ -544,7 +544,7 @@ async function showStageClearAndAdvance(){
   // ステージクリア演出
   const f=document.createElement('div');
   f.className='levelup-pop';
-  f.innerHTML=`<span class="lu-emo">🌟</span><span class="lu-txt">ステージ ${currentStage} クリア！</span>`;
+  f.innerHTML=`<span class="lu-emo"><img src="assets/pop_clear.webp" alt=""></span><span class="lu-txt">ステージ ${currentStage} クリア！</span>`;
   boardEl.appendChild(f);
   SFX.bigmerge(5);burst();burst();burst();
   await sleep(1600);
@@ -554,7 +554,7 @@ async function showStageClearAndAdvance(){
   if(currentStage>=TOTAL_STAGES){
     const gc=document.createElement('div');
     gc.className='levelup-pop';
-    gc.innerHTML='<span class="lu-emo">🏆</span><span class="lu-txt">ぜんぶクリア！大成功！</span>';
+    gc.innerHTML='<span class="lu-emo"><img src="assets/pop_allclear.webp" alt=""></span><span class="lu-txt">ぜんぶクリア！大成功！</span>';
     boardEl.appendChild(gc);
     SFX.bigmerge(5);burst();burst();burst();burst();
     await sleep(2000);
@@ -575,7 +575,7 @@ async function showStageClearAndAdvance(){
   const g=document.createElement('div');
   g.className='levelup-pop';
   const isEndless=currentStage>TOTAL_STAGES;
-  g.innerHTML=`<span class="lu-emo">${isEndless?'♾️':'🌊'}</span><span class="lu-txt">${isEndless?'ENDLESS MODE':'STAGE '+currentStage+'/'+TOTAL_STAGES}</span>`;
+  g.innerHTML=`<span class="lu-emo"><img src="assets/${isEndless?'pop_endless':'pop_stage'}.webp" alt=""></span><span class="lu-txt">${isEndless?'ENDLESS MODE':'STAGE '+currentStage+'/'+TOTAL_STAGES}</span>`;
   boardEl.appendChild(g);
   await sleep(1100);
   g.remove();
