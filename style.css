@@ -25,7 +25,7 @@
   .risecount.warn{color:var(--danger);background:rgba(224,54,74,.12);}
   .help-btn{background:rgba(255,255,255,.6);color:var(--ink-soft);border:none;border-radius:9px;font-family:inherit;font-weight:800;font-size:11px;padding:4px 10px;cursor:pointer;align-self:center;margin-bottom:6px;}
   .board-wrap{display:flex;justify-content:center;flex:1;}
-  .board{position:relative;width:100%;max-height:calc(100dvh - 215px);aspect-ratio:5/8;background:var(--board);border-radius:18px;padding:var(--gap);box-shadow:0 14px 30px -12px rgba(120,70,30,.45),inset 0 2px 4px rgba(255,255,255,.4);cursor:pointer;overflow:hidden;}
+  .board{position:relative;width:100%;max-height:calc(100dvh - 250px);aspect-ratio:5/8;background:var(--board);border-radius:18px;padding:var(--gap);box-shadow:0 14px 30px -12px rgba(120,70,30,.45),inset 0 2px 4px rgba(255,255,255,.4);cursor:pointer;overflow:hidden;}
   .grid{position:absolute;inset:var(--gap);display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(8,1fr);gap:var(--gap);}
   .grid .bg{background:var(--cell);border-radius:11px;transition:background .1s;}
   .grid .bg.aim{background:#f1d4ab;} .grid .bg.dz0{background:rgba(224,54,74,.22);} .grid .bg.dz1{background:rgba(224,54,74,.1);}
@@ -139,11 +139,11 @@
   .levelup-pop .lu-emo{font-size:42px;line-height:1;filter:drop-shadow(0 3px 4px rgba(0,0,0,.2));}
   .levelup-pop .lu-txt{font-size:22px;font-weight:800;color:var(--accent-d);letter-spacing:1px;}
   /* ── ローグライト 2カラムレイアウト ── */
-  .game-area{display:flex;flex-direction:row;gap:8px;align-items:flex-start;width:100%;}
-  .board-col{flex:1;min-width:0;display:flex;flex-direction:column;}
-  .side-col{width:64px;flex-shrink:0;display:flex;flex-direction:column;}
-  /* レベルパネル（縦） */
-  .lv-panel{background:rgba(255,255,255,.45);border-radius:14px;padding:6px 0;display:flex;flex-direction:column;box-shadow:0 4px 12px -4px rgba(120,70,30,.18);}
+  .game-area{display:flex;flex-direction:column;gap:6px;align-items:stretch;width:100%;}
+  /* スキルバー（盤面下の横一列） */
+  .skill-bar{display:flex;gap:6px;width:100%;align-items:stretch;background:rgba(255,255,255,.45);border-radius:14px;padding:6px;box-shadow:0 4px 12px -4px rgba(120,70,30,.18);}
+  .skill-bar .skill-slot-big{flex:1;border-bottom:none;}
+  .skill-bar .log-open-btn{flex:0 0 38px;width:38px;margin-top:0;align-self:stretch;}
   .lv-side{display:flex;flex-direction:column;align-items:center;gap:1px;flex:1;padding:5px 0;border-bottom:1px solid rgba(150,100,60,.08);}
   .lv-side:last-child{border-bottom:none;}
   .lv-side .la{font-size:18px;line-height:1;}
@@ -193,13 +193,7 @@
   .ri-cell{flex:1;border-radius:3px;background:rgba(0,0,0,.06);transition:background .4s;}
   .ri-cell.active{background:rgba(255,110,40,.5);}
   /* アクティブスキルスロット */
-  /* サイドパネル：ステージ情報＆大型スキルスロット */
-  .lv-panel{flex-direction:column;gap:6px;padding:8px 4px!important;}
-  .side-stage{display:flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.7);border-radius:10px;padding:6px 0;line-height:1.1;}
-  .side-stage .ss-label{font-size:8px;font-weight:800;color:var(--ink-soft);letter-spacing:1px;}
-  .side-stage .ss-num{font-size:22px;font-weight:800;color:var(--accent-d);}
-  .side-stage .ss-hippo{font-size:14px;margin-top:2px;}
-  .side-stage .ss-count{font-size:11px;font-weight:800;color:#1a8040;}
+  /* 大型スキルスロット */
   .skill-slot-big{padding:6px 4px 5px!important;display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:11px;background:rgba(255,255,255,.45);transition:box-shadow .3s,background .3s;}
   .skill-sname{font-size:10px;font-weight:800;color:var(--ink);text-align:center;line-height:1.2;}
   .skill-sdesc{font-size:8px;font-weight:700;color:var(--ink-soft);text-align:center;}
