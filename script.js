@@ -25,7 +25,7 @@ const STAGE_CONFIG=[
 const TOTAL_STAGES=5;
 const ANIMALS=[null,{emo:'🐹',nm:'ハムスター',cls:'t1'},{emo:'🐿️',nm:'リス',cls:'t2'},{emo:'🦆',nm:'アヒル',cls:'t3'},{emo:'🦦',nm:'カワウソ',cls:'t4'},{emo:'🦛',nm:'コビトカバ',cls:'t5'}];
 // ギミック（おじゃまブロック同様、重力で積む障害物。合体不可・カバの全破壊で一緒に消える）
-const GIMMICKS={walnut:{emo:'🌰',nm:'クルミ',cls:'walnut'},shell:{emo:'🦪',nm:'貝殻',cls:'shell'}};
+const GIMMICKS={walnut:{nm:'クルミ',cls:'walnut'},shell:{nm:'貝殻',cls:'shell'}};
 const MAX_TIER=5,MAX_CHAIN=9;
 const LS_KEY='animalDrop_roguelite_v2';
 
@@ -776,12 +776,12 @@ function paint(t){
     const g=GIMMICKS[t.gimmick];
     el.classList.remove('t1','t2','t3','t4','t5','rock');
     el.classList.add('gimmick',g.cls);
-    el.querySelector('.emo').textContent=g.emo;el.querySelector('.nm').textContent=g.nm;
+    el.querySelector('.emo').textContent='';el.querySelector('.nm').textContent=g.nm;
   }
   else if(t.rock){
     el.classList.remove('t1','t2','t3','t4','t5');
     el.classList.add('rock');
-    el.querySelector('.emo').textContent='⬛';el.querySelector('.nm').textContent='ブロック';
+    el.querySelector('.emo').textContent='';el.querySelector('.nm').textContent='ブロック';
   }
   else{const a=ANIMALS[t.tier];el.classList.remove('t1','t2','t3','t4','t5','rock');el.classList.add(a.cls);el.querySelector('.emo').textContent='';el.querySelector('.nm').textContent=a.nm;}
   el.style.left=leftOf(t.c);el.style.top=topOf(t.r);
