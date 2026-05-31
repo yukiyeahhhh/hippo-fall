@@ -242,12 +242,13 @@
   .draft-card .dc-name{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:2px;}
   .draft-card .dc-desc{font-size:10px;font-weight:700;color:var(--ink-soft);line-height:1.4;}
   /* カットイン */
-  .cutin-overlay{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;pointer-events:none;}
+  .cutin-overlay{position:fixed;inset:0;z-index:200;display:none;align-items:flex-start;justify-content:center;padding-top:15vh;pointer-events:none;}
   .cutin-overlay.show{display:flex;}
-  .cutin-box{background:transparent;text-align:center;animation:cutinPop .18s ease;display:flex;flex-direction:column;align-items:center;gap:10px;}
+  .cutin-box{background:transparent;text-align:center;animation:cutinPop .18s ease;}
+  .cutin-frame{position:relative;display:inline-block;border-radius:16px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,.32);}
   .cutin-img{display:block;width:min(90vw,420px);height:auto;}
   .cutin-img[src=""]{display:none;}
-  .cutin-title{font-size:26px;font-weight:800;color:#fff;letter-spacing:.04em;text-shadow:-2px -2px 0 rgba(0,0,0,.7),2px -2px 0 rgba(0,0,0,.7),-2px 2px 0 rgba(0,0,0,.7),2px 2px 0 rgba(0,0,0,.7),0 4px 12px rgba(0,0,0,.5);}
+  .cutin-title{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 11px;font-size:24px;font-weight:800;color:#fff;letter-spacing:.04em;background:linear-gradient(to top,rgba(0,0,0,.62) 0%,rgba(0,0,0,.32) 55%,rgba(0,0,0,0) 100%);text-shadow:0 2px 5px rgba(0,0,0,.7);}
   .cutin-message{display:none;}
   @keyframes cutinPop{from{transform:scale(.8);opacity:0;}to{transform:scale(1);opacity:1;}}
   /* 所持チカラリスト（サイドバー：絵文字バッジ2列） */
