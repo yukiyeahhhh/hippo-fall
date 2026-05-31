@@ -10,7 +10,7 @@
   body{font-family:'M PLUS Rounded 1c','Hiragino Maru Gothic ProN','Yu Gothic',system-ui,sans-serif;background:radial-gradient(120% 120% at 50% 0%,var(--bg1) 0%,var(--bg2) 100%);color:var(--ink);display:flex;align-items:flex-start;justify-content:center;height:100dvh;padding:6px 8px;overflow-y:auto;user-select:none;touch-action:manipulation;}
   .wrap{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:stretch;padding-bottom:4px;}
   .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;gap:8px;}
-  .title h1{font-size:clamp(19px,5.5vw,24px);font-weight:800;line-height:1;}
+  .title h1{font-size:clamp(19px,5.5vw,24px);font-weight:800;line-height:1;color:#ff9d4d;-webkit-text-stroke:2px #fff;paint-order:stroke fill;text-shadow:0 2px 0 var(--accent-d),0 3px 5px rgba(150,90,40,.28);}
   .title .sub{font-size:9px;color:var(--ink-soft);font-weight:700;margin-top:2px;letter-spacing:1px;}
   .scores{display:flex;gap:7px;}
   .score{background:var(--board);border-radius:12px;padding:5px 11px;text-align:center;min-width:62px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.08);}
@@ -35,6 +35,17 @@
   .tile .emo{font-size:clamp(22px,7vw,34px);line-height:1;filter:drop-shadow(0 2px 1px rgba(0,0,0,.12));}
   .tile .nm{display:none;}
   .t1{background:#fbe2b3;} .t2{background:#f7c98a;} .t3{background:#ffe27a;} .t4{background:#cda079;} .t5{background:#e8a9b8;}
+  /* 動物をキャラ画像で表示（マス＆キュー、絵文字の置き換え） */
+  .t1 .emo,.t2 .emo,.t3 .emo,.t4 .emo,.t5 .emo,
+  .e.t1,.e.t2,.e.t3,.e.t4,.e.t5{background-size:contain;background-repeat:no-repeat;background-position:center;}
+  .t1 .emo,.e.t1{background-image:url(assets/tile_t1.webp);}
+  .t2 .emo,.e.t2{background-image:url(assets/tile_t2.webp);}
+  .t3 .emo,.e.t3{background-image:url(assets/tile_t3.webp);}
+  .t4 .emo,.e.t4{background-image:url(assets/tile_t4.webp);}
+  .t5 .emo,.e.t5{background-image:url(assets/tile_t5.webp);}
+  .t1 .emo,.t2 .emo,.t3 .emo,.t4 .emo,.t5 .emo{display:block;width:90%;height:90%;filter:drop-shadow(0 2px 1px rgba(0,0,0,.15));}
+  .qnow .e.t1,.qnow .e.t2,.qnow .e.t3,.qnow .e.t4,.qnow .e.t5{display:inline-block;width:28px;height:28px;}
+  .qnext .e.t1,.qnext .e.t2,.qnext .e.t3,.qnext .e.t4,.qnext .e.t5{display:inline-block;width:22px;height:22px;}
   .tile.rock{background:linear-gradient(160deg,#7a6a5a,#5a4a3a)!important;box-shadow:0 5px 0 rgba(0,0,0,.3),inset 0 2px 3px rgba(255,255,255,.15)!important;}
   .tile.rock .nm{color:rgba(255,255,255,.75);}
   .tile.gimmick{background:linear-gradient(160deg,#b9874f,#8a5f33)!important;box-shadow:0 5px 0 rgba(0,0,0,.28),inset 0 2px 3px rgba(255,255,255,.3)!important;}
@@ -197,6 +208,15 @@
   @keyframes hippoborn{0%{transform:translate(-50%,-50%) scale(1);filter:none;}30%{transform:translate(-50%,-50%) scale(1.45);filter:drop-shadow(0 0 8px gold);}100%{transform:translate(-50%,-50%) scale(1.35);filter:drop-shadow(0 0 6px gold);}}
   .tile.hippo-born{animation:hippoborn .5s ease forwards;z-index:10;}
   .skill-slot-big .la-big{font-size:22px;line-height:1;}
+  /* スキルアイコンをキャラ画像で表示 */
+  .skill-slot-big .la-big.s-sq,.skill-slot-big .la-big.s-dk,.skill-slot-big .la-big.s-ot{display:inline-block;width:30px;height:30px;background-size:contain;background-repeat:no-repeat;background-position:center;}
+  .s-sq{background-image:url(assets/tile_t2.webp);}
+  .s-dk{background-image:url(assets/tile_t3.webp);}
+  .s-ot{background-image:url(assets/tile_t4.webp);}
+  /* 目標のコビトカバアイコンも画像化 */
+  .goal-row .goal-icon.s-hp{display:inline-block;width:26px;height:26px;font-size:0;background-size:contain;background-repeat:no-repeat;background-position:center;}
+  .side-stage .ss-hippo.s-hp{display:inline-block;width:22px;height:22px;font-size:0;background-size:contain;background-repeat:no-repeat;background-position:center;}
+  .s-hp{background-image:url(assets/tile_t5.webp);}
   /* ピッケルゲージ＋ボタン */
   .pickaxe-row{display:flex;align-items:center;gap:8px;background:#ffffffcc;border-radius:12px;padding:5px 12px;margin-bottom:3px;font-weight:800;position:relative;z-index:1;}
   .pickaxe-gauge-bg{flex:1;height:8px;background:rgba(0,0,0,.12);border-radius:4px;overflow:hidden;}

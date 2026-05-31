@@ -312,7 +312,7 @@ function updateRiseCounter(){
   riseCountEl.textContent='🔺 次のせりあがりまで：あと'+Math.max(0,dropsUntilWave)+'手';
   riseCountEl.classList.toggle('warn',dropsUntilWave<=3);
 }
-function updateQueue(){cnowEl.textContent=ANIMALS[current].emo;cnextEl.textContent=ANIMALS[next].emo;}
+function updateQueue(){cnowEl.className='e t'+current;cnowEl.textContent='';cnextEl.className='e t'+next;cnextEl.textContent='';}
 
 // ─ 波間隔 ─
 function resetWaveInterval(){
@@ -783,7 +783,7 @@ function paint(t){
     el.classList.add('rock');
     el.querySelector('.emo').textContent='⬛';el.querySelector('.nm').textContent='ブロック';
   }
-  else{const a=ANIMALS[t.tier];el.classList.remove('t1','t2','t3','t4','t5','rock');el.classList.add(a.cls);el.querySelector('.emo').textContent=a.emo;el.querySelector('.nm').textContent=a.nm;}
+  else{const a=ANIMALS[t.tier];el.classList.remove('t1','t2','t3','t4','t5','rock');el.classList.add(a.cls);el.querySelector('.emo').textContent='';el.querySelector('.nm').textContent=a.nm;}
   el.style.left=leftOf(t.c);el.style.top=topOf(t.r);
   const inner=el.querySelector('.inner');
   if(t.skillHit){inner.style.animation='none';void inner.offsetWidth;inner.style.animation='skill-hit .6s ease';t.skillHit=false;}

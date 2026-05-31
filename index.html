@@ -50,9 +50,10 @@
     margin-bottom:14px;box-shadow:0 3px 0 rgba(210,118,63,.18);
   }
   h1{
-    font-size:clamp(44px,13vw,62px);font-weight:800;line-height:.95;
-    color:var(--ink);letter-spacing:1px;
-    text-shadow:0 4px 0 #fff,0 5px 0 rgba(210,118,63,.25),0 12px 22px rgba(180,110,50,.25);
+    font-size:clamp(44px,13vw,62px);font-weight:800;line-height:.95;letter-spacing:1px;
+    color:#ff9d4d;
+    -webkit-text-stroke:5px #fff;paint-order:stroke fill; /* 白い縁取り（ステッカー風） */
+    text-shadow:0 3px 0 var(--accent-d),0 6px 0 #b5652f,0 14px 18px rgba(150,90,40,.32); /* 茶の押し出し＋やわ影 */
     margin-bottom:6px;
   }
   h1 .pop{display:inline-block;animation:bob 2.4s ease-in-out infinite;}
