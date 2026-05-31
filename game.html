@@ -14,7 +14,7 @@
 <body>
 <div class="wrap">
   <div class="top">
-    <div class="title"><h1>どうぶつポトン</h1><div class="sub">🧩 PUZZLE</div></div>
+    <div class="title"><h1>どうぶつポトン</h1><div class="sub">SCORE <b id="scoreVal" style="font-size:14px;color:var(--accent-d);letter-spacing:.5px;">0</b></div></div>
     <div style="display:flex;gap:4px;">
       <button class="help-btn" onclick="showTitleModal()" style="margin:0;padding:5px 8px;font-size:10px;">🏠</button>
       <button class="help-btn" id="restart" onclick="showRestartModal()" style="margin:0;padding:5px 8px;font-size:10px;">↺</button>
@@ -48,7 +48,7 @@
       </div>
       <div class="overlay" id="overlay">
         <div class="big" id="ovEmo">😵</div>
-        <h2 id="ovTitle">ブロックがあふれちゃった…</h2>
+        <h2 id="ovTitle">おじゃま岩があふれちゃった…</h2>
         <div class="fin">到達ステージ</div>
         <div class="finscore" id="finscore">0</div>
         <div class="fin" id="finmsg"></div>
@@ -109,6 +109,20 @@
     <button class="restart-cancel" onclick="hideTitleModal()">キャンセル</button>
   </div>
 </div>
+<div class="restart-modal" id="tutorialModal">
+  <div class="restart-box">
+    <div class="restart-title">📖 あそびかた</div>
+    <div class="restart-sub">はじめる前に、遊び方を見ますか？</div>
+    <button class="restart-opt" onclick="tutorialYes()">
+      <span class="ro-emo">📖</span>
+      <span class="ro-body"><b>遊び方を見る</b><br><span>かんたんな説明を表示します</span></span>
+    </button>
+    <button class="restart-opt restart-opt-full" onclick="tutorialNo()">
+      <span class="ro-emo">▶</span>
+      <span class="ro-body"><b>そのまま始める</b><br><span>すぐにゲーム開始</span></span>
+    </button>
+  </div>
+</div>
 <div class="restart-modal" id="restartModal">
   <div class="restart-box">
     <div class="restart-title">↺ リスタート</div>
@@ -150,23 +164,23 @@
 
     <div class="help-card">
       <div class="hc-title">🔺 せりあがり ＝ タイムアタック</div>
-      <div class="hc-row"><span class="hc-emo">🔺</span><span>一定の手数ごとに、下から<b>おじゃまブロックがせりあがる。</b></span></div>
-      <div class="hc-row"><span class="hc-emo">🚫</span><span><b>スキルではブロックを消せない！</b>減らせるのは<b>クルミ・貝殻・カバの全破壊</b>だけ。</span></div>
+      <div class="hc-row"><span class="hc-emo">🔺</span><span>一定の手数ごとに、下から<b>おじゃま岩がせりあがる。</b></span></div>
+      <div class="hc-row"><span class="hc-emo">🚫</span><span><b>おたすけアクションではおじゃま岩を消せない！</b>減らせるのは<b>クルミ・貝殻・カバの全破壊</b>だけ。</span></div>
       <div class="hc-row"><span class="hc-emo">⏱️</span><span>＝「積み上がる前に<b>カバを作って一掃できるか</b>」のタイムアタックが勝負！</span></div>
     </div>
 
     <div class="help-card">
       <div class="hc-title">🎁 おたすけアクション（3つ）</div>
-      <div class="hc-note">元になる動物が合体するとゲージが溜まる。<b>作りにくい動物のスキルほど一発が強い！</b>クルミを割っても充電できるよ。</div>
+      <div class="hc-note">元になる動物が合体するとゲージが溜まる。<b>作りにくい動物のおたすけアクションほど一発が強い！</b>クルミを割っても充電できるよ。</div>
       <div class="hc-action">
         <div class="hca-head"><span class="hca-emo"><img src="assets/tile_t2.webp" alt=""></span><span class="hca-name">ひとやすみ</span></div>
         <div class="hca-trigger">リスが合体するとゲージ +12.5%</div>
-        <div class="hca-effect">せりあがりを満タンに巻き戻し＋次の1回はブロックなし。詰む前に早めに！</div>
+        <div class="hca-effect">せりあがりを満タンに巻き戻し＋次の1回はおじゃま岩なし。詰む前に早めに！</div>
       </div>
       <div class="hc-action">
         <div class="hca-head"><span class="hca-emo"><img src="assets/tile_t3.webp" alt=""></span><span class="hca-name">あつまれ</span></div>
         <div class="hca-trigger">アヒルが合体するとゲージ +20%</div>
-        <div class="hca-effect">発動して動物を1匹タップ→その種類がタップした列に集合して合体！</div>
+        <div class="hca-effect">発動して動物を1匹タップ→近くにいる同じ動物がタップした列に集合して合体！</div>
       </div>
       <div class="hc-action">
         <div class="hca-head"><span class="hca-emo"><img src="assets/tile_t4.webp" alt=""></span><span class="hca-name">おてだま</span></div>
@@ -177,7 +191,7 @@
 
     <div class="help-card">
       <div class="hc-title"><img class="ji" src="assets/gimmick_walnut.webp" alt=""><img class="ji" src="assets/gimmick_shell.webp" alt=""> ギミック</div>
-      <div class="hc-row"><span class="hc-emo"><img src="assets/gimmick_walnut.webp" alt=""></span><span><b>クルミ</b>：となりに<b><img class="ji" src="assets/tile_t2.webp" alt="">リス</b>が来ると割れて、<b>3つのスキルが各+50%！</b>（スキルの主な充電源）</span></div>
+      <div class="hc-row"><span class="hc-emo"><img src="assets/gimmick_walnut.webp" alt=""></span><span><b>クルミ</b>：となりに<b><img class="ji" src="assets/tile_t2.webp" alt="">リス</b>が来ると割れて、<b>3つのおたすけアクションが各+50%！</b>（おたすけの主な充電源）</span></div>
       <div class="hc-row"><span class="hc-emo"><img src="assets/gimmick_shell.webp" alt=""></span><span><b>貝殻</b>：となりに<b><img class="ji" src="assets/tile_t4.webp" alt="">カワウソ</b>が来ると割れて、<b>まわり8マスの動物がいっきに+1進化！</b>大連鎖のロマン。</span></div>
       <div class="hc-row"><span class="hc-emo">💥</span><span>どちらも<b>カバの全破壊で一緒に消える</b>。割る前にカバを作るともったいない！</span></div>
     </div>

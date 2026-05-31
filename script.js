@@ -67,6 +67,7 @@ let gamePaused=false;   // カットイン等の演出中フラグ
 let currentStage=1;
 let hippoMade=0;     // 現ステージで作ったカバ数
 let hippoGoal=1;     // 現ステージの目標カバ数
+let score=0;         // 累計スコア（newGameで0／カバ全破壊・ステージ跨ぎでは保持）
 
 // ─ ユーティリティ ─
 function getSpeedLevel(){return waveCount;} // 波数を進行度として使う
@@ -94,7 +95,7 @@ const SFX={
   itemSquirrel(){[320,480,640,800,960,1120].forEach((f,i)=>tone(f,'sine',0.1,0.18,i*0.045));},
   itemDuck(){for(let i=0;i<5;i++)tone(600-i*80,'sine',0.12,0.14,i*0.055);tone(180,'sine',0.3,0.12,0.1);},
   itemOtter(){tone(90,'sawtooth',0.08,0.35);[250,190,130].forEach((f,i)=>tone(f,'sawtooth',0.06,0.2,0.04+i*0.05));},
-  itemHippo(lv){if(lv>=2){tone(40,'sawtooth',0.5,0.55);for(let i=0;i<6;i++)tone(220-i*25,'square',0.18,0.22,i*0.07);}else{tone(60,'sawtooth',0.35,0.42);for(let i=0;i<3;i++)tone(160-i*22,'square',0.13,0.18,0.05+i*0.07);}},
+  itemHippo(lv){const base=lv>=2?0.5:0.36;tone(98,'sine',0.6,base*0.6);[523,659,784,1047].forEach((f,i)=>{tone(f,'triangle',0.24,base,0.05+i*0.09);tone(f*2,'sine',0.14,base*0.28,0.05+i*0.09);});if(lv>=2)tone(1319,'triangle',0.4,base*0.6,0.42);},
   rise(){tone(150,'sawtooth',0.09,0.16);tone(190,'sawtooth',0.07,0.13,0.1);},
   gameover(){[400,340,280,200].forEach((f,i)=>tone(f,'sawtooth',0.22,0.2,i*0.13));},
   draft(){[0,1,2,3,4].forEach(i=>tone(520+i*140,'sine',0.10,0.13,i*0.058));tone(1100,'sine',0.13,0.25,0.32);},
@@ -270,6 +271,10 @@ function updateStageUI(){
   const ssc=document.getElementById('ssCount');
   if(ssc)ssc.textContent=isEndless?'累計 '+hippoMade+'匹':hippoMade+'/'+hippoGoal;
 }
+const SCORE_BASE=8;    // 合体スコア＝tier×個数×チェイン×これ
+const HIPPO_SCORE=500; // カバ誕生ボーナス
+function renderScore(){const el=document.getElementById('scoreVal');if(el)el.textContent=score.toLocaleString();}
+function addScore(n){if(n>0){score+=n;renderScore();}}
 function getStageGoal(stage){
   if(stage>=1&&stage<=TOTAL_STAGES)return STAGE_CONFIG[stage].goal;
   return STAGE_CONFIG[TOTAL_STAGES].goal; // エンドレスは最終ステージと同じ目標数
@@ -380,7 +385,7 @@ function activateSkill(key){
   if(aiming){const cur=aiming.key;cancelAiming();if(cur===key)return;}
   if(busy||gamePaused||s.gauge<1)return;
   // 照準系（対象選択が要る）
-  if(key==='duck_march'){startAiming('duck_march','🦆 あつまれ：集めたい動物をタップ（もう一度🦆でやめる）');return;}
+  if(key==='duck_march'){startAiming('duck_march','🦆 あつまれ：集めたい動物を押して、集めたい場所へドラッグ→指を離す（もう一度🦆でやめる）');return;}
   if(key==='refresh'){startAiming('refresh','🦦 おてだま：入れ替える2匹をタップ（もう一度🦦でやめる）');return;}
   // 即時系（リス）
   s.gauge=0;updateSkillSlotsUI();
@@ -399,7 +404,7 @@ async function finishSkillResolve(){
   const born=await resolveBoard();
   if(born)await handleHippoBorn();
   await checkStageClear();
-  if(isDanger()){endGame('💥','ブロックがあふれちゃった…');return;}
+  if(isDanger()){endGame('💥','おじゃま岩があふれちゃった…');return;}
   checkClose();
 }
 
@@ -413,7 +418,21 @@ function startAiming(key,msg){
 function cancelAiming(){
   if(!aiming)return;
   for(const id of aiming.picks){if(tiles[id]){const el=document.getElementById('tile-'+id);if(el)el.classList.remove('aim-pick');}}
+  clearMarchPreview();
   aiming=null;hideAimBanner();boardEl.classList.remove('aiming');updateSkillSlotsUI();
+}
+// 🦆あつまれの範囲プレビュー（中心マスから半径MARCH_RANGEの四角＋集まる同種を光らせる）
+function clearMarchPreview(){
+  bgCells.forEach(d=>d.classList.remove('range'));
+  for(const id in tiles){const el=document.getElementById('tile-'+id);if(el)el.classList.remove('range-hit');}
+}
+function previewMarch(cr,cc,tier){
+  clearMarchPreview();
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    if(Math.max(Math.abs(r-cr),Math.abs(c-cc))>MARCH_RANGE)continue;
+    const idx=r*COLS+c;if(bgCells[idx])bgCells[idx].classList.add('range');
+    const id=grid[r][c];if(id&&tiles[id]&&!tiles[id].rock&&tiles[id].tier===tier){const el=document.getElementById('tile-'+id);if(el)el.classList.add('range-hit');}
+  }
 }
 function showAimBanner(msg){const b=document.getElementById('aimBanner');if(b){b.textContent=msg;b.classList.add('show');}}
 function hideAimBanner(){const b=document.getElementById('aimBanner');if(b)b.classList.remove('show');}
@@ -422,13 +441,7 @@ function handleAimTap(row,col){
   if(busy||!aiming)return;
   const id=grid[row]?.[col];
   if(!id||!tiles[id]||tiles[id].rock){floatEl('toast','動物をタップしてね');return;}
-  if(aiming.key==='duck_march'){
-    const tier=tiles[id].tier;
-    cancelAiming();
-    activeSkills.duck_march.gauge=0;updateSkillSlotsUI();
-    busy=true;
-    (async()=>{try{await runDuckMarch(tier,col);await finishSkillResolve();}finally{busy=false;}})();
-  }else if(aiming.key==='refresh'){
+  if(aiming.key==='refresh'){
     // 既に選んだ動物を再タップ→選択解除
     if(aiming.picks.includes(id)){
       aiming.picks=aiming.picks.filter(x=>x!==id);
@@ -458,15 +471,16 @@ async function applySquirrelRest(){
   await sleep(500);
 }
 
-// 🦆 アヒルのあつまれ：指定tierの動物が全員、タップした列にドサッと集合する→縦に並んで自動合体
-// その列が埋まったら近い列へあふれる（＝混んだ盤面ほど集まりきらない＝仕様の「入る分だけ」）
-async function runDuckMarch(tier,anchorCol){
+// 🦆 アヒルのあつまれ：中心マスから半径MARCH_RANGE（四角）以内の同種だけドサッと集合する→自動合体
+// 範囲を絞ることで「全体回収の万能技」から「散らばりを読んで撃つ局所技」にする（強すぎれば1へ）
+const MARCH_RANGE=2; // 中心マスから半径この数（四角＝チェビシェフ距離）以内の同種を集める
+async function runDuckMarch(tier,centerR,centerC){
   SFX.itemDuck();await showCutin('アヒルのあつまれ！','');
   const members=[];
-  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const id=grid[r][c];if(id&&tiles[id]&&!tiles[id].rock&&tiles[id].tier===tier)members.push(id);}
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){if(Math.max(Math.abs(r-centerR),Math.abs(c-centerC))>MARCH_RANGE)continue;const id=grid[r][c];if(id&&tiles[id]&&!tiles[id].rock&&tiles[id].tier===tier)members.push(id);}
   if(members.length<2){floatEl('toast','🦆 集める仲間がいない');return;}
-  // 集合先の列＝タップした列
-  const lc=anchorCol;
+  // 集合先の列＝中心の列
+  const lc=centerC;
   // 全メンバーを一旦外し、残りを重力で下詰めにする（他の動物は押しのけず自然に落ちるだけ）
   for(const id of members){const t=tiles[id];grid[t.r][t.c]=0;}
   applyGravity();
@@ -544,7 +558,7 @@ async function showStageClearAndAdvance(){
   // ステージクリア演出
   const f=document.createElement('div');
   f.className='levelup-pop';
-  f.innerHTML=`<span class="lu-emo"><img src="assets/pop_clear.webp" alt=""></span><span class="lu-txt">ステージ ${currentStage} クリア！</span>`;
+  f.innerHTML=`<span class="lu-emo"><img src="assets/pop_clear.webp" alt=""></span><span class="lu-txt"><span class="lu-line">ステージ${currentStage}</span><span class="lu-line">クリア！</span></span>`;
   boardEl.appendChild(f);
   SFX.bigmerge(5);burst();burst();burst();
   await sleep(1600);
@@ -554,7 +568,7 @@ async function showStageClearAndAdvance(){
   if(currentStage>=TOTAL_STAGES){
     const gc=document.createElement('div');
     gc.className='levelup-pop';
-    gc.innerHTML='<span class="lu-emo"><img src="assets/pop_allclear.webp" alt=""></span><span class="lu-txt">ぜんぶクリア！大成功！</span>';
+    gc.innerHTML='<span class="lu-emo"><img src="assets/pop_allclear.webp" alt=""></span><span class="lu-txt"><span class="lu-line">ぜんぶクリア！</span><span class="lu-line">大成功！</span></span>';
     boardEl.appendChild(gc);
     SFX.bigmerge(5);burst();burst();burst();burst();
     await sleep(2000);
@@ -575,7 +589,7 @@ async function showStageClearAndAdvance(){
   const g=document.createElement('div');
   g.className='levelup-pop';
   const isEndless=currentStage>TOTAL_STAGES;
-  g.innerHTML=`<span class="lu-emo"><img src="assets/${isEndless?'pop_endless':'pop_stage'}.webp" alt=""></span><span class="lu-txt">${isEndless?'ENDLESS MODE':'STAGE '+currentStage+'/'+TOTAL_STAGES}</span>`;
+  g.innerHTML=`<span class="lu-emo"><img src="assets/${isEndless?'pop_endless':'pop_stage'}.webp" alt=""></span><span class="lu-txt">${isEndless?'<span class="lu-line">ENDLESS</span><span class="lu-line">MODE</span>':'<span class="lu-line">STAGE '+currentStage+'/'+TOTAL_STAGES+'</span>'}</span>`;
   boardEl.appendChild(g);
   await sleep(1100);
   g.remove();
@@ -709,7 +723,7 @@ function newGame(){
   // ボードサイズを7×10固定
   COLS=BOARD_COLS;ROWS=BOARD_ROWS;
   grid=Array.from({length:ROWS},()=>Array(COLS).fill(0));
-  tiles={};uid=1;maxChain=0;waveCount=0;survivedDrops=0;resetWaveInterval();activeDropId=0;gameVersion++;busy=false;
+  tiles={};uid=1;maxChain=0;waveCount=0;survivedDrops=0;resetWaveInterval();activeDropId=0;gameVersion++;busy=false;score=0;renderScore();
   gameLog.length=0;saveGameLog();pushLog('stage','🏁 ゲームスタート');
   // スキル・進行のリセット
   for(const k of Object.keys(activeSkills))activeSkills[k].gauge=0;
@@ -781,7 +795,7 @@ function paint(t){
   else if(t.rock){
     el.classList.remove('t1','t2','t3','t4','t5');
     el.classList.add('rock');
-    el.querySelector('.emo').textContent='';el.querySelector('.nm').textContent='ブロック';
+    el.querySelector('.emo').textContent='';el.querySelector('.nm').textContent='おじゃま岩';
   }
   else{const a=ANIMALS[t.tier];el.classList.remove('t1','t2','t3','t4','t5','rock');el.classList.add(a.cls);el.querySelector('.emo').textContent='';el.querySelector('.nm').textContent=a.nm;}
   el.style.left=leftOf(t.c);el.style.top=topOf(t.r);
@@ -832,6 +846,22 @@ function adjacentHasTier(r,c,tier){
 }
 // 進化でそのtierになったときのスキルチャージ
 function chargeForTier(t){if(t===2)addActiveSkill('squirrel');else if(t===3)addActiveSkill('duck_march');else if(t===4)addActiveSkill('refresh');}
+// 合体演出：タイルに火花＋溜める対象のおたすけスロットへ✨を飛ばして着弾で光らせる
+const TIER_SKILL={2:'squirrel',3:'duck_march',4:'refresh'};
+const SKILL_COLORS={squirrel:'#e8944a',duck_march:'#ffce3a',refresh:'#56b4e6'};
+function mergeFx(survId,tier){
+  const el=document.getElementById('tile-'+survId);if(!el)return;
+  if(tier<MAX_TIER){const s=document.createElement('div');s.className='merge-spark';el.appendChild(s);setTimeout(()=>s.remove(),620);}
+  const key=TIER_SKILL[tier];if(!key)return;
+  const slot=document.getElementById('slot-'+key);if(!slot)return;
+  const a=el.getBoundingClientRect(),b=slot.getBoundingClientRect();
+  const sx=a.left+a.width/2,sy=a.top+a.height/2,ex=b.left+b.width/2,ey=b.top+b.height/2;
+  const p=document.createElement('div');p.className='charge-spark';p.textContent='✨';
+  p.style.left=sx+'px';p.style.top=sy+'px';p.style.setProperty('--c',SKILL_COLORS[key]);
+  p.style.setProperty('--dx',(ex-sx)+'px');p.style.setProperty('--dy',(ey-sy)+'px');
+  document.body.appendChild(p);
+  setTimeout(()=>{p.remove();slot.classList.add('charge-pulse');setTimeout(()=>slot.classList.remove('charge-pulse'),420);},860);
+}
 // 割れる条件を満たしたギミックを処理。割れたらtrue（盤面が変わったので再収束する）
 async function breakReadyGimmicks(){
   const walnuts=[],shells=[];
@@ -842,7 +872,7 @@ async function breakReadyGimmicks(){
   if(walnuts.length===0&&shells.length===0)return false;
   // 🌰クルミ：消滅＋3スキル各+50%（合体は起こさない＝チャージと空マス化のみ）
   for(const id of walnuts){const t=tiles[id];grid[t.r][t.c]=0;removeFade(Number(id));for(const k of Object.keys(activeSkills))addSkillGauge(k,0.5);}
-  if(walnuts.length){SFX.itemSpawn();floatEl('item','🌰 クルミ！ スキル+50%');burst();}
+  if(walnuts.length){SFX.itemSpawn();floatEl('item','🌰 クルミ！ おたすけ+50%');burst();}
   // 🦪貝殻：消滅＋周囲8マスの動物が一斉に+1進化（カバ誕生まで繋がり得る）
   const bumped=new Set();
   for(const id of shells){
@@ -865,7 +895,7 @@ async function birthAnyHippos(){
   const births=[];
   for(const id in tiles){const t=tiles[id];if(t&&!t.rock&&!t.gimmick&&t.tier>=MAX_TIER)births.push(id);}
   if(births.length===0)return false;
-  for(const id of births){const el=document.getElementById('tile-'+id);if(el)el.classList.add('hippo-born');hippoMade++;addKill(MAX_TIER);}
+  for(const id of births){const el=document.getElementById('tile-'+id);if(el)el.classList.add('hippo-born');hippoMade++;addKill(MAX_TIER);addScore(HIPPO_SCORE);}
   render();updateStageUI();
   SFX.itemHippo(2);await showCutin('コビトカバ誕生！','');
   floatEl('toast','🦛 コビトカバ誕生！');SFX.bigmerge(5);burst();burst();shake();
@@ -898,14 +928,15 @@ async function resolveBoard(){
       }
       survBumps.push({id:sid,tier:newTier});
       chargeForTier(newTier);
+      addScore(newTier*size*SCORE_BASE*chain);
       if(rise>=2)bigLeap=true;
     }
     render();await sleep(205);
     removeSet.forEach(id=>{if(id)removeFade(id);});
     survBumps.forEach(b=>{if(tiles[b.id]){tiles[b.id].tier=b.tier;tiles[b.id].bump=true;}});
     render();
+    survBumps.forEach(b=>{if(tiles[b.id])mergeFx(b.id,b.tier);});
     if(bigLeap){floatEl('chain','✨ 大進化！');SFX.bigmerge(3);burst();shake();}
-    else if(chain>=2){floatEl('chain','🔥 '+chain+'チェイン！');SFX.chain(chain);if(chain>=3)shake();}
     else{const nb=survBumps[0];if(nb&&tiles[nb.id])SFX.merge(tiles[nb.id].tier||2);}
     maxChain=Math.max(maxChain,chain);updateStageUI();
     // カバ判定（合体でT5になった）→ 見せ場のあと全破壊へ
@@ -929,7 +960,7 @@ async function drop(col){
     activeDropId=0;
     if(born)await handleHippoBorn();if(gameVersion!==gv)return;
     await checkStageClear();if(gameVersion!==gv)return;
-    if(isDanger()){endGame('💥','ブロックがあふれちゃった…');return;}
+    if(isDanger()){endGame('💥','おじゃま岩があふれちゃった…');return;}
     const wasClose=Object.values(tiles).some(t=>t.r<=DANGER_ROW);
     checkClose();
     totalDrops++;survivedDrops++;dropsUntilWave--;
@@ -937,7 +968,7 @@ async function drop(col){
     if(dropsUntilWave<=0){
       dropsUntilWave=currentWaveInterval;
       await riseStep();if(gameVersion!==gv)return;
-      if(isDanger()||emptyCount()===0){endGame('💥','ブロックがあふれちゃった…');return;}
+      if(isDanger()||emptyCount()===0){endGame('💥','おじゃま岩があふれちゃった…');return;}
       checkClose();
       if(wasClose&&!Object.values(tiles).some(t=>t.r<=DANGER_ROW+1))floatEl('toast','耐えた！💦');
     }
@@ -975,7 +1006,7 @@ async function doOneRise(){
 }
 async function riseStep(){
   waveCount++;updateAtmosphere();
-  SFX.rise();floatEl('warn','🔺 ブロックがせりあがった！');await sleep(440);
+  SFX.rise();floatEl('warn','🔺 おじゃま岩がせりあがった！');await sleep(440);
   await doOneRise();
   applyGravity();render();
   await sleep(200);
@@ -1005,7 +1036,7 @@ function _drainFloatQueue(){
   const f=document.createElement('div');
   f.className='float '+type;f.textContent=txt;
   boardEl.appendChild(f);
-  setTimeout(()=>{f.remove();_drainFloatQueue();},type==='chain'||type==='warn'?520:type==='item'?700:380);
+  setTimeout(()=>{f.remove();_drainFloatQueue();},type==='chain'||type==='warn'?800:type==='item'?1000:650);
 }
 function shake(){boardEl.classList.remove('shake');void boardEl.offsetWidth;boardEl.classList.add('shake');setTimeout(()=>boardEl.classList.remove('shake'),360);}
 function burst(){const ico=['✨','💫','⭐','🦛'];for(let i=0;i<8;i++){const p=document.createElement('div');p.className='particle';const ang=Math.random()*6.28,dist=42+Math.random()*55;p.style.left=(35+Math.random()*30)+'%';p.style.top=(30+Math.random()*30)+'%';p.style.setProperty('--tx',(Math.cos(ang)*dist)+'px');p.style.setProperty('--ty',(Math.sin(ang)*dist)+'px');p.textContent=ico[i%4];boardEl.appendChild(p);setTimeout(()=>p.remove(),620);}}
@@ -1017,7 +1048,7 @@ function clearGame(){
   document.getElementById('ovEmo').textContent='🎉';
   document.getElementById('ovTitle').textContent='生き残った！🏁';
   document.getElementById('finscore').textContent=currentStage;
-  document.getElementById('finmsg').textContent=`カバ${hippoMade}体作成 ／ 最大${maxChain}チェイン`;
+  document.getElementById('finmsg').textContent=`スコア${score.toLocaleString()} ／ カバ${hippoMade}体作成 ／ 最大${maxChain}チェイン`;
   renderHistory(history);
   overlay.classList.add('show','cleared');
   boardEl.classList.remove('close');
@@ -1064,7 +1095,7 @@ function endGame(emo,title){
   const history=saveHistory(entry);
   document.getElementById('ovEmo').textContent=emo;document.getElementById('ovTitle').textContent=title;
   document.getElementById('finscore').textContent=currentStage;
-  document.getElementById('finmsg').textContent=`最大${maxChain}チェイン ／ カバ${hippoMade}体`;
+  document.getElementById('finmsg').textContent=`スコア${score.toLocaleString()} ／ カバ${hippoMade}体 ／ 最大${maxChain}チェイン`;
   renderHistory(history);
   BGM.stop();SFX.gameover();overlay.classList.add('show');boardEl.classList.remove('close');
   // ゲームオーバー用ボタン表示切替
@@ -1074,14 +1105,39 @@ function endGame(emo,title){
 
 // ─ 入力 ─
 function cellFromXY(cx,cy){const rect=boardEl.getBoundingClientRect(),pad=parseFloat(getComputedStyle(boardEl).paddingLeft),iW=rect.width-2*pad,iH=rect.height-2*pad;return{col:Math.max(0,Math.min(COLS-1,Math.floor((cx-rect.left-pad)/iW*COLS))),row:Math.max(0,Math.min(ROWS-1,Math.floor((cy-rect.top-pad)/iH*ROWS)))};}
+// 🦆あつまれ：押してドラッグ→離して発射（中心を指で動かしながら範囲をプレビュー）
+boardEl.addEventListener('pointerdown',e=>{
+  if(overlay.classList.contains('show')||gamePaused||busy)return;
+  if(aiming&&aiming.key==='duck_march'){
+    const{row,col}=cellFromXY(e.clientX,e.clientY);
+    const id=grid[row]?.[col];
+    if(!id||!tiles[id]||tiles[id].rock){floatEl('toast','🦆 集めたい動物を押してね');return;}
+    aiming.tier=tiles[id].tier;aiming.active=true;aiming.cr=row;aiming.cc=col;
+    boardEl.setPointerCapture?.(e.pointerId);
+    previewMarch(row,col,aiming.tier);
+  }
+});
 boardEl.addEventListener('click',e=>{
   BGM.start(currentStage);
   if(overlay.classList.contains('show')||gamePaused)return;
+  if(aiming&&aiming.key==='duck_march')return; // ドラッグ発射で処理済み
   const{col,row}=cellFromXY(e.clientX,e.clientY);
   if(aiming){handleAimTap(row,col);return;}
   if(!busy)drop(col);
 });
-boardEl.addEventListener('pointermove',e=>{if(busy||aiming)return;const{col}=cellFromXY(e.clientX,e.clientY);bgCells.forEach((d,i)=>d.classList.toggle('aim',i%COLS===col&&!d.classList.contains('dz0')&&!d.classList.contains('dz1')));});
+boardEl.addEventListener('pointermove',e=>{
+  if(aiming&&aiming.key==='duck_march'&&aiming.active){const{row,col}=cellFromXY(e.clientX,e.clientY);aiming.cr=row;aiming.cc=col;previewMarch(row,col,aiming.tier);return;}
+  if(busy||aiming)return;const{col}=cellFromXY(e.clientX,e.clientY);bgCells.forEach((d,i)=>d.classList.toggle('aim',i%COLS===col&&!d.classList.contains('dz0')&&!d.classList.contains('dz1')));
+});
+boardEl.addEventListener('pointerup',e=>{
+  if(aiming&&aiming.key==='duck_march'&&aiming.active){
+    const tier=aiming.tier,cr=aiming.cr,cc=aiming.cc;
+    clearMarchPreview();cancelAiming();
+    activeSkills.duck_march.gauge=0;updateSkillSlotsUI();
+    busy=true;
+    (async()=>{try{await runDuckMarch(tier,cr,cc);await finishSkillResolve();}finally{busy=false;}})();
+  }
+});
 boardEl.addEventListener('pointerleave',()=>bgCells.forEach(d=>d.classList.remove('aim')));
 document.getElementById('ovBtn').onclick=newGame;
 document.getElementById('retryStageBtn').onclick=retryStage;
@@ -1093,12 +1149,11 @@ function confirmNewGame(){hideRestartModal();newGame();}
 function showTitleModal(){history.pushState({modal:'title'},'');document.getElementById('titleModal').classList.add('show');}
 function hideTitleModal(){document.getElementById('titleModal').classList.remove('show');}
 function goToTitle(){location.href='index.html';}
-document.getElementById('shareBtn').addEventListener('click',()=>{const txt=`🐹どうぶつポトン🦛\nStage${currentStage}到達！\nカバ${hippoMade}体 ／ 最大${maxChain}チェイン\n#どうぶつポトン`;if(navigator.share){navigator.share({text:txt}).catch(()=>{});}else{navigator.clipboard.writeText(txt).then(()=>{const b=document.getElementById('shareBtn');b.textContent='コピー済み✓';setTimeout(()=>{b.textContent='シェア📤';},2000);}).catch(()=>{});}});
-function toggleHelp(){
-  const p=document.getElementById('helpPanel');
-  const open=p.classList.toggle('show');
-  if(open)history.pushState({modal:'help'},'');
-}
+document.getElementById('shareBtn').addEventListener('click',()=>{const txt=`🐹どうぶつポトン🦛\nStage${currentStage}到達！\nスコア${score.toLocaleString()} ／ カバ${hippoMade}体 ／ 最大${maxChain}チェイン\n#どうぶつポトン`;if(navigator.share){navigator.share({text:txt}).catch(()=>{});}else{navigator.clipboard.writeText(txt).then(()=>{const b=document.getElementById('shareBtn');b.textContent='コピー済み✓';setTimeout(()=>{b.textContent='シェア📤';},2000);}).catch(()=>{});}});
+let _preGameMode=null; // 'help-from-title' | 'tutorial-help'
+function openHelp(){const p=document.getElementById('helpPanel');if(p.classList.contains('show'))return;p.classList.add('show');history.pushState({modal:'help'},'');}
+function closeHelp(){const p=document.getElementById('helpPanel');if(!p.classList.contains('show'))return;p.classList.remove('show');const m=_preGameMode;_preGameMode=null;if(m==='help-from-title')goToTitle();else if(m==='tutorial-help')beginGame();}
+function toggleHelp(){const p=document.getElementById('helpPanel');p.classList.contains('show')?closeHelp():openHelp();}
 function renderBgmPanel(){
   const list=document.getElementById('bgmTrackList');if(!list)return;
   const sel=BGM.getSel();
@@ -1135,8 +1190,10 @@ window.addEventListener('popstate',()=>{
   if(mp?.style.display==='block'){mp.style.display='none';return;}
   const dp=document.getElementById('debugPanel');
   if(dp?.style.display==='block'){dp.style.display='none';return;}
-  const panels=['logPanel','helpPanel'];
-  for(const id of panels){const el=document.getElementById(id);if(el?.classList.contains('show')){el.classList.remove('show');return;}}
+  if(document.getElementById('helpPanel')?.classList.contains('show')){closeHelp();return;}
+  const lp=document.getElementById('logPanel');
+  if(lp?.classList.contains('show')){lp.classList.remove('show');return;}
+  if(document.getElementById('tutorialModal')?.classList.contains('show')){document.getElementById('tutorialModal').classList.remove('show');goToTitle();return;}
   if(document.getElementById('restartModal')?.classList.contains('show')){hideRestartModal();return;}
   if(document.getElementById('titleModal')?.classList.contains('show')){hideTitleModal();return;}
   // 何も開いていない → タイトルへ戻る確認
@@ -1145,8 +1202,14 @@ window.addEventListener('popstate',()=>{
 // 戻るボタンをゲーム内で受け取れるよう初期状態を積む
 history.pushState({modal:'game'},'');
 try{newGame();}catch(e){window.onerror(e.message,'',0,0,e);}
-// タイトル画面の「あそびかた」から来た場合は自動でヘルプを開く
-if(new URLSearchParams(location.search).get('help')==='1')toggleHelp();
+gamePaused=true; // 盤面は通常どおり組みつつ、チュートリアル選択まで操作だけ止める
+function beginGame(){gamePaused=false;const dl=document.getElementById('dangerLine'),lb=document.getElementById('dangerLabel');if(dl)dl.style.top=topOf(DANGER_ROW);if(lb)lb.style.top=topOf(DANGER_ROW);render();}
+function showTutorialModal(){history.pushState({modal:'tutorial'},'');document.getElementById('tutorialModal').classList.add('show');}
+function tutorialYes(){document.getElementById('tutorialModal').classList.remove('show');_preGameMode='tutorial-help';openHelp();}
+function tutorialNo(){document.getElementById('tutorialModal').classList.remove('show');beginGame();}
+// 「あそびかた」から来た＝閉じたらタイトルへ／「はじめる」から来た＝毎回チュートリアル確認
+if(new URLSearchParams(location.search).get('help')==='1'){_preGameMode='help-from-title';openHelp();}
+else{showTutorialModal();}
 // ページ離脱・リロード時の確認（ゲームオーバー後は不要）
 window.addEventListener('beforeunload',e=>{
   if(overlay.classList.contains('show'))return;
