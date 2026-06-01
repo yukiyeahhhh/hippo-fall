@@ -950,8 +950,7 @@ async function resolveBoard(){
     else if(chain>=2){SFX.chain(chain);if(chain>=3)shake();}
     else{const nb=survBumps[0];if(nb&&tiles[nb.id])SFX.merge(tiles[nb.id].tier||2);}
     maxChain=Math.max(maxChain,chain);updateStageUI();
-    // カバ判定（合体でT5になった）→ 見せ場のあと全破壊へ
-    if(await birthAnyHippos()){bornHippo=true;break;}
+    // カバ(T5)ができても即打ち切らず、他の連鎖を最後まで流す（落ち着いた時点でカバ誕生→全破壊）
     await sleep(140);applyGravity();render();await sleep(210);
   }
   return bornHippo;
