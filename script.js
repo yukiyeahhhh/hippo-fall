@@ -385,7 +385,7 @@ function activateSkill(key){
   if(aiming){const cur=aiming.key;cancelAiming();if(cur===key)return;}
   if(busy||gamePaused||s.gauge<1)return;
   // 照準系（対象選択が要る）
-  if(key==='duck_march'){startAiming('duck_march','🦆 あつまれ：集めたい動物を押して、集めたい場所へドラッグ→指を離す（もう一度🦆でやめる）');return;}
+  if(key==='duck_march'){startAiming('duck_march','🦆 あつまれ：集めたい場所を押してドラッグ→指を離して範囲を決める（もう一度🦆でやめる）');return;}
   if(key==='refresh'){startAiming('refresh','🦦 おてだま：入れ替える2匹をタップ（もう一度🦦でやめる）');return;}
   // 即時系（リス）
   s.gauge=0;updateSkillSlotsUI();
@@ -421,18 +421,41 @@ function cancelAiming(){
   clearMarchPreview();
   aiming=null;hideAimBanner();boardEl.classList.remove('aiming');updateSkillSlotsUI();
 }
-// 🦆あつまれの範囲プレビュー（中心マスから半径MARCH_RANGEの四角＋集まる同種を光らせる）
+// 🦆あつまれの範囲プレビュー（中心マスから半径MARCH_RANGEの四角＋中心と同種を光らせる）
 function clearMarchPreview(){
   bgCells.forEach(d=>d.classList.remove('range'));
   for(const id in tiles){const el=document.getElementById('tile-'+id);if(el)el.classList.remove('range-hit');}
 }
-function previewMarch(cr,cc,tier){
+function marchTierAt(r,c){const id=grid[r]?.[c];return(id&&tiles[id]&&!tiles[id].rock&&!tiles[id].gimmick)?tiles[id].tier:0;}
+function previewMarch(cr,cc){
   clearMarchPreview();
+  const tier=marchTierAt(cr,cc);
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
     if(Math.max(Math.abs(r-cr),Math.abs(c-cc))>MARCH_RANGE)continue;
     const idx=r*COLS+c;if(bgCells[idx])bgCells[idx].classList.add('range');
-    const id=grid[r][c];if(id&&tiles[id]&&!tiles[id].rock&&tiles[id].tier===tier){const el=document.getElementById('tile-'+id);if(el)el.classList.add('range-hit');}
+    if(tier){const id=grid[r][c];if(id&&tiles[id]&&!tiles[id].rock&&!tiles[id].gimmick&&tiles[id].tier===tier){const el=document.getElementById('tile-'+id);if(el)el.classList.add('range-hit');}}
   }
+}
+// 範囲確定後の確認（はい＝集合／いいえ＝やめる・ゲージ温存）
+let pendingMarch=null;
+function showMarchConfirm(tier,cr,cc,count){
+  pendingMarch={tier,cr,cc};
+  const a=ANIMALS[tier],sub=document.getElementById('marchSub');
+  if(sub)sub.textContent=`この範囲の${a.emo}${a.nm} ${count}匹に集合してもらいますか？`;
+  history.pushState({modal:'march'},'');
+  document.getElementById('marchModal').classList.add('show');
+}
+function marchConfirmYes(){
+  document.getElementById('marchModal').classList.remove('show');
+  const m=pendingMarch;pendingMarch=null;cancelAiming();
+  if(!m)return;
+  activeSkills.duck_march.gauge=0;updateSkillSlotsUI();
+  busy=true;
+  (async()=>{try{await runDuckMarch(m.tier,m.cr,m.cc);await finishSkillResolve();}finally{busy=false;}})();
+}
+function marchConfirmNo(){
+  document.getElementById('marchModal').classList.remove('show');
+  pendingMarch=null;cancelAiming();
 }
 function showAimBanner(msg){const b=document.getElementById('aimBanner');if(b){b.textContent=msg;b.classList.add('show');}}
 function hideAimBanner(){const b=document.getElementById('aimBanner');if(b)b.classList.remove('show');}
@@ -1105,37 +1128,35 @@ function endGame(emo,title){
 
 // ─ 入力 ─
 function cellFromXY(cx,cy){const rect=boardEl.getBoundingClientRect(),pad=parseFloat(getComputedStyle(boardEl).paddingLeft),iW=rect.width-2*pad,iH=rect.height-2*pad;return{col:Math.max(0,Math.min(COLS-1,Math.floor((cx-rect.left-pad)/iW*COLS))),row:Math.max(0,Math.min(ROWS-1,Math.floor((cy-rect.top-pad)/iH*ROWS)))};}
-// 🦆あつまれ：押してドラッグ→離して発射（中心を指で動かしながら範囲をプレビュー）
+// 🦆あつまれ：押してドラッグで5×5を選ぶ→離す→確認→集合（中心マスの動物がターゲット）
 boardEl.addEventListener('pointerdown',e=>{
   if(overlay.classList.contains('show')||gamePaused||busy)return;
   if(aiming&&aiming.key==='duck_march'){
     const{row,col}=cellFromXY(e.clientX,e.clientY);
-    const id=grid[row]?.[col];
-    if(!id||!tiles[id]||tiles[id].rock){floatEl('toast','🦆 集めたい動物を押してね');return;}
-    aiming.tier=tiles[id].tier;aiming.active=true;aiming.cr=row;aiming.cc=col;
+    aiming.active=true;aiming.cr=row;aiming.cc=col;
     boardEl.setPointerCapture?.(e.pointerId);
-    previewMarch(row,col,aiming.tier);
+    previewMarch(row,col);
   }
 });
 boardEl.addEventListener('click',e=>{
   BGM.start(currentStage);
   if(overlay.classList.contains('show')||gamePaused)return;
-  if(aiming&&aiming.key==='duck_march')return; // ドラッグ発射で処理済み
+  if(aiming&&aiming.key==='duck_march')return; // ドラッグ＋確認で処理
   const{col,row}=cellFromXY(e.clientX,e.clientY);
   if(aiming){handleAimTap(row,col);return;}
   if(!busy)drop(col);
 });
 boardEl.addEventListener('pointermove',e=>{
-  if(aiming&&aiming.key==='duck_march'&&aiming.active){const{row,col}=cellFromXY(e.clientX,e.clientY);aiming.cr=row;aiming.cc=col;previewMarch(row,col,aiming.tier);return;}
+  if(aiming&&aiming.key==='duck_march'&&aiming.active){const{row,col}=cellFromXY(e.clientX,e.clientY);aiming.cr=row;aiming.cc=col;previewMarch(row,col);return;}
   if(busy||aiming)return;const{col}=cellFromXY(e.clientX,e.clientY);bgCells.forEach((d,i)=>d.classList.toggle('aim',i%COLS===col&&!d.classList.contains('dz0')&&!d.classList.contains('dz1')));
 });
 boardEl.addEventListener('pointerup',e=>{
   if(aiming&&aiming.key==='duck_march'&&aiming.active){
-    const tier=aiming.tier,cr=aiming.cr,cc=aiming.cc;
-    clearMarchPreview();cancelAiming();
-    activeSkills.duck_march.gauge=0;updateSkillSlotsUI();
-    busy=true;
-    (async()=>{try{await runDuckMarch(tier,cr,cc);await finishSkillResolve();}finally{busy=false;}})();
+    aiming.active=false;
+    const cr=aiming.cr,cc=aiming.cc,tier=marchTierAt(cr,cc);
+    let cnt=0;if(tier){for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){if(Math.max(Math.abs(r-cr),Math.abs(c-cc))>MARCH_RANGE)continue;const id=grid[r][c];if(id&&tiles[id]&&!tiles[id].rock&&!tiles[id].gimmick&&tiles[id].tier===tier)cnt++;}}
+    if(!tier||cnt<2){floatEl('toast','🦆 中心に集めたい動物を合わせてね');clearMarchPreview();return;}
+    showMarchConfirm(tier,cr,cc,cnt);
   }
 });
 boardEl.addEventListener('pointerleave',()=>bgCells.forEach(d=>d.classList.remove('aim')));
@@ -1193,6 +1214,7 @@ window.addEventListener('popstate',()=>{
   if(document.getElementById('helpPanel')?.classList.contains('show')){closeHelp();return;}
   const lp=document.getElementById('logPanel');
   if(lp?.classList.contains('show')){lp.classList.remove('show');return;}
+  if(document.getElementById('marchModal')?.classList.contains('show')){marchConfirmNo();return;}
   if(document.getElementById('tutorialModal')?.classList.contains('show')){document.getElementById('tutorialModal').classList.remove('show');goToTitle();return;}
   if(document.getElementById('restartModal')?.classList.contains('show')){hideRestartModal();return;}
   if(document.getElementById('titleModal')?.classList.contains('show')){hideTitleModal();return;}
