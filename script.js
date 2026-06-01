@@ -15,11 +15,11 @@ const BOARD_COLS=7,BOARD_ROWS=10; // 全ステージ共通
 // rWalnut/rShell＝瓦礫落下での出現確率、wWalnut/wShell＝せりあがり波での混入確率
 const STAGE_CONFIG=[
   null,
-  {goal:1, waveInterval:10, rockChance:0.30, rWalnut:1.00, rShell:0.35, wWalnut:0.15, wShell:0.05}, // Stage 1（両方やさしい）
-  {goal:2, waveInterval:8,  rockChance:0.30, rWalnut:1.00, rShell:0.30, wWalnut:0.13, wShell:0.04}, // Stage 2（波が速く）
-  {goal:2, waveInterval:8,  rockChance:0.38, rWalnut:0.80, rShell:0.22, wWalnut:0.10, wShell:0.03}, // Stage 3（波が重く）
-  {goal:3, waveInterval:6,  rockChance:0.38, rWalnut:0.60, rShell:0.15, wWalnut:0.07, wShell:0.02}, // Stage 4（波が速く）
-  {goal:3, waveInterval:6,  rockChance:0.46, rWalnut:0.45, rShell:0.10, wWalnut:0.05, wShell:0.015},// Stage 5（波が重く／∞は間隔5・岩0.50で別途）
+  {goal:1, scoreGoal:1000,  waveInterval:10, rockChance:0.30, rWalnut:1.00, rShell:0.35, wWalnut:0.15, wShell:0.05}, // Stage 1（両方やさしい）
+  {goal:2, scoreGoal:3000,  waveInterval:8,  rockChance:0.30, rWalnut:1.00, rShell:0.30, wWalnut:0.13, wShell:0.04}, // Stage 2（波が速く）
+  {goal:2, scoreGoal:6000,  waveInterval:8,  rockChance:0.38, rWalnut:0.80, rShell:0.22, wWalnut:0.10, wShell:0.03}, // Stage 3（波が重く）
+  {goal:3, scoreGoal:10000, waveInterval:6,  rockChance:0.38, rWalnut:0.60, rShell:0.15, wWalnut:0.07, wShell:0.02}, // Stage 4（波が速く）
+  {goal:3, scoreGoal:20000, waveInterval:6,  rockChance:0.46, rWalnut:0.45, rShell:0.10, wWalnut:0.05, wShell:0.015},// Stage 5（波が重く／∞は間隔5・岩0.50で別途）
 ];
 const TOTAL_STAGES=5;
 const ANIMALS=[null,{emo:'🐹',nm:'ハムスター',cls:'t1'},{emo:'🐿️',nm:'リス',cls:'t2'},{emo:'🦆',nm:'アヒル',cls:'t3'},{emo:'🦦',nm:'カワウソ',cls:'t4'},{emo:'🦛',nm:'コビトカバ',cls:'t5'}];
@@ -66,7 +66,8 @@ let gamePaused=false;   // カットイン等の演出中フラグ
 let currentStage=1;
 let hippoMade=0;     // 現ステージで作ったカバ数
 let hippoGoal=1;     // 現ステージの目標カバ数
-let score=0;         // 累計スコア（newGameで0／カバ全破壊・ステージ跨ぎでは保持）
+let score=0;         // 累計スコア（表示・シェア用。newGameで0／ステージ跨ぎは保持）
+let stageScore=0;    // 現ステージで稼いだ分（クリア判定用。ステージ移行・リトライで0）
 
 // ─ ユーティリティ ─
 function getSpeedLevel(){return waveCount;} // 波数を進行度として使う
@@ -255,31 +256,35 @@ function addKill(tier){
 }
 function updateStageUI(){
   const isEndless=currentStage>TOTAL_STAGES;
-  // 上部ゴール表示
+  const goal=isEndless?0:curStageCfg().scoreGoal;
+  // 上部ゴール表示（このステージで稼いだスコア／目標）
   const gb=document.getElementById('goalFill');
-  if(gb)gb.style.width=isEndless?100:Math.min(100,hippoMade/hippoGoal*100)+'%';
+  if(gb)gb.style.width=(isEndless?100:Math.min(100,stageScore/goal*100))+'%';
   const gc=document.getElementById('goalCount');
-  if(gc)gc.textContent=isEndless?'累計 '+hippoMade+'匹':hippoMade+'/'+hippoGoal;
+  if(gc)gc.textContent=isEndless?'∞':stageScore.toLocaleString()+' / '+goal.toLocaleString();
   const gl=document.getElementById('goalLabel');
-  if(gl)gl.innerHTML=isEndless?'🎮 <b>ENDLESS</b> ／ カバ累計':'STAGE <b id="stageNum">'+currentStage+'</b> ／ カバ作成';
+  if(gl)gl.innerHTML=isEndless?'🎮 <b>ENDLESS</b> ／ スコア':'STAGE <b id="stageNum">'+currentStage+'</b> ／ 目標スコア';
   const sn=document.getElementById('stageNum');
   if(sn)sn.textContent=isEndless?'∞':currentStage;
   // サイドパネルのステージ情報
   const ssn=document.getElementById('ssNum');
   if(ssn){ssn.textContent=isEndless?'∞':currentStage+'/'+TOTAL_STAGES;ssn.style.fontSize=isEndless?'28px':'22px';}
   const ssc=document.getElementById('ssCount');
-  if(ssc)ssc.textContent=isEndless?'累計 '+hippoMade+'匹':hippoMade+'/'+hippoGoal;
+  if(ssc)ssc.textContent=isEndless?'∞':stageScore.toLocaleString()+' / '+goal.toLocaleString();
 }
 const SCORE_BASE=8;    // 合体スコア＝tier×個数×チェイン×これ
 const HIPPO_SCORE=500; // カバ誕生ボーナス
+const OBLITERATE_VALUE=12; // カバ全破壊で消える動物1体あたりの得点（tier×これ）
 function renderScore(){const el=document.getElementById('scoreVal');if(el)el.textContent=score.toLocaleString();}
-function addScore(n){if(n>0){score+=n;renderScore();}}
+function addScore(n){if(n>0){score+=n;stageScore+=n;renderScore();updateStageUI();}}
 function getStageGoal(stage){
   if(stage>=1&&stage<=TOTAL_STAGES)return STAGE_CONFIG[stage].goal;
   return STAGE_CONFIG[TOTAL_STAGES].goal; // エンドレスは最終ステージと同じ目標数
 }
 // 現在ステージのギミック出現設定（エンドレスは最終ステージと同じ）
 function curStageCfg(){return STAGE_CONFIG[Math.min(currentStage,TOTAL_STAGES)];}
+// ステージの圧力（せりあがり間隔・岩割合）。∞は間隔5・岩0.50
+function stagePace(stage){if(stage>TOTAL_STAGES)return{iv:5,rock:0.50};const c=STAGE_CONFIG[Math.max(1,stage)];return{iv:c.waveInterval,rock:c.rockChance};}
 // updateLevelUI互換シム（既存呼び出し対応用）
 function updateLevelUI(){updateStageUI();}
 function toggleLogPanel(){
@@ -514,8 +519,8 @@ function spawnHamsterAt(r,c){
 // ─ カバ誕生：盤面を全破壊 → 瓦礫が落ちて新しい初期盤面（コアループの心臓） ─
 async function handleHippoBorn(){
   await obliterateBoard();
-  // このカバでステージクリアするなら盤面は作らない（クリア演出が次盤面を用意する）
-  if(currentStage<=TOTAL_STAGES && hippoMade>=hippoGoal)return;
+  // このカバでステージクリア（スコア到達）するなら盤面は作らない（クリア演出が次盤面を用意する）
+  if(currentStage<=TOTAL_STAGES && stageScore>=curStageCfg().scoreGoal)return;
   // 同ステージ継続：瓦礫で新しい初期盤面 → A案連鎖
   const born=await dropRubble();
   if(born)await handleHippoBorn(); // 瓦礫の偶発連鎖で再びカバが出たら、また全破壊
@@ -525,6 +530,10 @@ async function handleHippoBorn(){
 async function obliterateBoard(){
   SFX.rowclear();SFX.bigmerge(5);burst();burst();shake();
   bgCells.forEach(d=>{d.style.background='rgba(255,140,0,.6)';setTimeout(()=>{d.style.background='';},420);});
+  // 全破壊で消える動物ぶんのスコア（岩・ギミックは0）＝育ててからカバの報われ感
+  let gained=0;
+  for(const id of Object.keys(tiles)){const t=tiles[id];if(t&&!t.rock&&!t.gimmick)gained+=t.tier*OBLITERATE_VALUE;}
+  if(gained>0){addScore(gained);floatEl('item','💥 +'+gained.toLocaleString());}
   for(const id of Object.keys(tiles))removeFade(Number(id));
   grid=Array.from({length:ROWS},()=>Array(COLS).fill(0));
   await sleep(460);
@@ -538,7 +547,7 @@ async function dropRubble(){
 
 // ─ ステージクリア判定：エンドレス中（TOTAL_STAGES超過）は進行しない ─
 async function checkStageClear(){
-  if(currentStage<=TOTAL_STAGES && hippoMade>=hippoGoal){
+  if(currentStage<=TOTAL_STAGES && stageScore>=curStageCfg().scoreGoal){
     await showStageClearAndAdvance();
   }
 }
@@ -574,6 +583,7 @@ async function showStageClearAndAdvance(){
   // 次ステージへ移行
   currentStage++;
   hippoMade=0;
+  stageScore=0;
   hippoGoal=getStageGoal(currentStage);
   updateAtmosphere();
   updateStageUI();updateSkillSlotsUI();
@@ -582,9 +592,14 @@ async function showStageClearAndAdvance(){
   const g=document.createElement('div');
   g.className='levelup-pop';
   const isEndless=currentStage>TOTAL_STAGES;
-  g.innerHTML=`<span class="lu-emo"><img src="assets/${isEndless?'pop_endless':'pop_stage'}.webp" alt=""></span><span class="lu-txt">${isEndless?'<span class="lu-line">ENDLESS</span><span class="lu-line">MODE</span>':'<span class="lu-line">STAGE '+currentStage+'/'+TOTAL_STAGES+'</span>'}</span>`;
+  // 何が変わったか（前ステージとの圧力差）を伝える
+  const prev=stagePace(currentStage-1),now=stagePace(currentStage),ch=[];
+  if(now.iv<prev.iv)ch.push('🔺 せりあがりが速くなった');
+  if(now.rock>prev.rock)ch.push('🪨 おじゃま岩が増える');
+  const chHtml=ch.length?`<span class="lu-change">${ch.join('<br>')}</span>`:'';
+  g.innerHTML=`<span class="lu-emo"><img src="assets/${isEndless?'pop_endless':'pop_stage'}.webp" alt=""></span><span class="lu-txt">${isEndless?'<span class="lu-line">ENDLESS</span><span class="lu-line">MODE</span>':'<span class="lu-line">STAGE '+currentStage+'/'+TOTAL_STAGES+'</span>'}</span>${chHtml}`;
   boardEl.appendChild(g);
-  await sleep(1100);
+  await sleep(ch.length?1700:1100);
   g.remove();
   await setupStage(currentStage);
   gamePaused=false;
@@ -716,7 +731,7 @@ function newGame(){
   // ボードサイズを7×10固定
   COLS=BOARD_COLS;ROWS=BOARD_ROWS;
   grid=Array.from({length:ROWS},()=>Array(COLS).fill(0));
-  tiles={};uid=1;maxChain=0;waveCount=0;survivedDrops=0;resetWaveInterval();activeDropId=0;gameVersion++;busy=false;score=0;renderScore();
+  tiles={};uid=1;maxChain=0;waveCount=0;survivedDrops=0;resetWaveInterval();activeDropId=0;gameVersion++;busy=false;score=0;stageScore=0;renderScore();
   gameLog.length=0;saveGameLog();pushLog('stage','🏁 ゲームスタート');
   // スキル・進行のリセット
   for(const k of Object.keys(activeSkills))activeSkills[k].gauge=0;
@@ -921,7 +936,8 @@ async function resolveBoard(){
       }
       survBumps.push({id:sid,tier:newTier});
       chargeForTier(newTier);
-      addScore(newTier*size*SCORE_BASE*chain);
+      const gained=Math.round(newTier*size*SCORE_BASE*(1+(chain-1)*0.2));
+      addScore(gained);floatScoreAt(sid,gained);
       if(rise>=2)bigLeap=true;
     }
     render();await sleep(205);
@@ -929,7 +945,9 @@ async function resolveBoard(){
     survBumps.forEach(b=>{if(tiles[b.id]){tiles[b.id].tier=b.tier;tiles[b.id].bump=true;}});
     render();
     survBumps.forEach(b=>{if(tiles[b.id])mergeFx(b.id,b.tier);});
+    if(chain>=2)floatEl('chain',`🔥 ${chain}チェイン ×${(1+(chain-1)*0.2).toFixed(1)}`);
     if(bigLeap){floatEl('chain','✨ 大進化！');SFX.bigmerge(3);burst();shake();}
+    else if(chain>=2){SFX.chain(chain);if(chain>=3)shake();}
     else{const nb=survBumps[0];if(nb&&tiles[nb.id])SFX.merge(tiles[nb.id].tier||2);}
     maxChain=Math.max(maxChain,chain);updateStageUI();
     // カバ判定（合体でT5になった）→ 見せ場のあと全破壊へ
@@ -1031,6 +1049,13 @@ function _drainFloatQueue(){
   boardEl.appendChild(f);
   setTimeout(()=>{f.remove();_drainFloatQueue();},type==='chain'||type==='warn'?800:type==='item'?1000:650);
 }
+// 合体したタイルに「+スコア」をふわっと表示（タイルの子＝paintで消えない）
+function floatScoreAt(tileId,n){
+  const tile=document.getElementById('tile-'+tileId);if(!tile)return;
+  const f=document.createElement('div');f.className='score-pop';f.textContent='+'+n;
+  tile.appendChild(f);
+  setTimeout(()=>f.remove(),760);
+}
 function shake(){boardEl.classList.remove('shake');void boardEl.offsetWidth;boardEl.classList.add('shake');setTimeout(()=>boardEl.classList.remove('shake'),360);}
 function burst(){const ico=['✨','💫','⭐','🦛'];for(let i=0;i<8;i++){const p=document.createElement('div');p.className='particle';const ang=Math.random()*6.28,dist=42+Math.random()*55;p.style.left=(35+Math.random()*30)+'%';p.style.top=(30+Math.random()*30)+'%';p.style.setProperty('--tx',(Math.cos(ang)*dist)+'px');p.style.setProperty('--ty',(Math.sin(ang)*dist)+'px');p.textContent=ico[i%4];boardEl.appendChild(p);setTimeout(()=>p.remove(),620);}}
 
@@ -1063,7 +1088,7 @@ function retryStage(){
   // スキルゲージはリセット
   for(const k of Object.keys(activeSkills))activeSkills[k].gauge=0;
   // ステージ進捗はリセット（ステージ番号・スコアは維持）
-  hippoMade=0;hippoGoal=getStageGoal(currentStage);
+  hippoMade=0;stageScore=0;hippoGoal=getStageGoal(currentStage);
   gamePaused=false;
   // bgCellsを再構築（COLS/ROWSは維持）
   gridEl.innerHTML='';bgCells=[];
