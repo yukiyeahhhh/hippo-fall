@@ -87,19 +87,19 @@ function tone(freq,type,dur,vol=0.28,t=0){const c=getCtx();if(!c)return;const o=
 // ─ SFX ─
 const SFX={
   drop(){tone(100,'sine',0.07,0.72);},
-  merge(tier){tone(220+tier*55,'sine',0.13,0.22);tone(220+tier*55+35,'sine',0.08,0.13,0.07);},
-  bigmerge(tier){for(let i=0;i<3;i++)tone(260+tier*70+i*45,'sine',0.11,0.18,i*0.07);},
-  rowclear(){tone(80,'sawtooth',0.22,0.32);for(let i=0;i<4;i++)tone(110+i*80,'sine',0.14,0.18,0.06+i*0.07);},
+  merge(tier){const b=200+tier*52;tone(b,'triangle',0.13,0.36);tone(b*1.5,'triangle',0.1,0.24,0.055);tone(b*2,'sine',0.09,0.13,0.055);},
+  bigmerge(tier){for(let i=0;i<3;i++)tone(260+tier*70+i*45,'triangle',0.12,0.2,i*0.07);},
+  rowclear(){tone(80,'triangle',0.24,0.34);for(let i=0;i<5;i++)tone(160+i*120,'sine',0.16,0.18,0.05+i*0.06);},
   itemSpawn(){for(let i=0;i<4;i++)tone(380+i*140,'sine',0.08,0.16,i*0.05);},
-  itemHamster(){tone(700,'sawtooth',0.18,0.18);const c=getCtx();if(!c)return;const o=c.createOscillator(),g=c.createGain();o.type='sawtooth';o.frequency.setValueAtTime(650,c.currentTime);o.frequency.exponentialRampToValueAtTime(180,c.currentTime+0.22);g.gain.setValueAtTime(0.18,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.25);o.connect(g);g.connect(c.destination);o.start(c.currentTime);o.stop(c.currentTime+0.28);},
+  itemHamster(){tone(700,'triangle',0.18,0.18);const c=getCtx();if(!c)return;const o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.setValueAtTime(650,c.currentTime);o.frequency.exponentialRampToValueAtTime(180,c.currentTime+0.22);g.gain.setValueAtTime(0.18,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.25);o.connect(g);g.connect(c.destination);o.start(c.currentTime);o.stop(c.currentTime+0.28);},
   itemSquirrel(){[320,480,640,800,960,1120].forEach((f,i)=>tone(f,'sine',0.1,0.18,i*0.045));},
   itemDuck(){for(let i=0;i<5;i++)tone(600-i*80,'sine',0.12,0.14,i*0.055);tone(180,'sine',0.3,0.12,0.1);},
-  itemOtter(){tone(90,'sawtooth',0.08,0.35);[250,190,130].forEach((f,i)=>tone(f,'sawtooth',0.06,0.2,0.04+i*0.05));},
+  itemOtter(){tone(90,'triangle',0.09,0.34);[260,200,150].forEach((f,i)=>tone(f,'triangle',0.07,0.2,0.04+i*0.05));},
   itemHippo(lv){const base=lv>=2?0.5:0.36;tone(98,'sine',0.6,base*0.6);[523,659,784,1047].forEach((f,i)=>{tone(f,'triangle',0.24,base,0.05+i*0.09);tone(f*2,'sine',0.14,base*0.28,0.05+i*0.09);});if(lv>=2)tone(1319,'triangle',0.4,base*0.6,0.42);},
-  rise(){tone(150,'sawtooth',0.09,0.16);tone(190,'sawtooth',0.07,0.13,0.1);},
-  gameover(){[400,340,280,200].forEach((f,i)=>tone(f,'sawtooth',0.22,0.2,i*0.13));},
+  rise(){tone(160,'triangle',0.1,0.18);tone(214,'triangle',0.08,0.14,0.1);},
+  gameover(){[392,330,262,196].forEach((f,i)=>tone(f,'triangle',0.26,0.22,i*0.13));},
   draft(){[0,1,2,3,4].forEach(i=>tone(520+i*140,'sine',0.10,0.13,i*0.058));tone(1100,'sine',0.13,0.25,0.32);},
-  chain(n){for(let i=0;i<Math.min(n,5);i++)tone(280+i*110,'square',0.08,0.12,i*0.06);},
+  chain(n){const k=Math.min(n,6);for(let i=0;i<k;i++)tone(523*Math.pow(1.16,i),'triangle',0.1,0.22,i*0.045);tone(523*Math.pow(1.16,k),'sine',0.14,0.16,k*0.045);},
 };
 
 // ─ BGM（ホンワカ合成） ─
@@ -516,27 +516,60 @@ function spawnHamsterAt(r,c){
   tiles[id]=t;grid[r][c]=id;paint(t);
 }
 
-// ─ カバ誕生：盤面を全破壊 → 瓦礫が落ちて新しい初期盤面（コアループの心臓） ─
+// ─ カバ誕生：盤面を全破壊（低tier→カバの順に集まって消える連鎖演出）→ 瓦礫が落ちて新しい初期盤面 ─
 async function handleHippoBorn(){
   await obliterateBoard();
   // このカバでステージクリア（スコア到達）するなら盤面は作らない（クリア演出が次盤面を用意する）
   if(currentStage<=TOTAL_STAGES && stageScore>=curStageCfg().scoreGoal)return;
-  // 同ステージ継続：瓦礫で新しい初期盤面 → A案連鎖
+  // 同ステージ継続：瓦礫で新しい初期盤面 → 偶発連鎖
   const born=await dropRubble();
   if(born)await handleHippoBorn(); // 瓦礫の偶発連鎖で再びカバが出たら、また全破壊
 }
 
-// 盤面の全タイル（動物・ブロック）を消し飛ばす
+// 盤面の全タイル（動物・ブロック）を消し飛ばす。動物は低tier→カバ(T5)の順に連鎖消しして倍率を盛る
 async function obliterateBoard(){
-  SFX.rowclear();SFX.bigmerge(5);burst();burst();shake();
+  SFX.bigmerge(5);shake();
+  // 残っている動物をtier別にまとめる（岩・ギミックはこの連鎖には乗らない）
+  const byTier=new Map();
+  for(const id of Object.keys(tiles)){const t=tiles[id];if(t&&!t.rock&&!t.gimmick){if(!byTier.has(t.tier))byTier.set(t.tier,[]);byTier.get(t.tier).push(Number(id));}}
+  const tiers=[...byTier.keys()].sort((a,b)=>a-b);
+  let combo=0,total=0;
+  for(const tr of tiers){
+    combo++;
+    const ids=byTier.get(tr);
+    const mult=1+(combo-1)*0.5; // 段が上がるほど倍率アップ（カバ=最終段で最大）
+    let base=0;for(const id of ids)base+=tr*OBLITERATE_VALUE;
+    const gained=Math.round(base*mult);
+    total+=gained;
+    // この段の動物を重心マスへ吸い寄せる
+    let sr=0,sc=0;for(const id of ids){sr+=tiles[id].r;sc+=tiles[id].c;}
+    const gr=Math.round(sr/ids.length),gc=Math.round(sc/ids.length);
+    SFX.chain(combo);showComboHeadline(combo,mult);
+    for(const id of ids){const el=document.getElementById('tile-'+id);if(el){el.classList.add('gather');el.style.left=leftOf(gc);el.style.top=topOf(gr);}}
+    await sleep(240);
+    // 集まったところでポンッと弾けて消える
+    burstAt(gc,gr);if(combo>=3)shake();
+    addScore(gained);
+    for(const id of ids){const t=tiles[id];if(t)grid[t.r][t.c]=0;removeFade(id);}
+    render();await sleep(120);
+    applyGravity();render();await sleep(150);
+  }
+  // フィナーレ：残った岩・ギミックも吹き飛ばして盤面クリア
+  SFX.rowclear();burst();burst();shake();
   bgCells.forEach(d=>{d.style.background='rgba(255,140,0,.6)';setTimeout(()=>{d.style.background='';},420);});
-  // 全破壊で消える動物ぶんのスコア（岩・ギミックは0）＝育ててからカバの報われ感
-  let gained=0;
-  for(const id of Object.keys(tiles)){const t=tiles[id];if(t&&!t.rock&&!t.gimmick)gained+=t.tier*OBLITERATE_VALUE;}
-  if(gained>0){addScore(gained);floatEl('item','💥 +'+gained.toLocaleString());}
+  if(total>0)floatEl('item','💥 +'+total.toLocaleString());
   for(const id of Object.keys(tiles))removeFade(Number(id));
   grid=Array.from({length:ROWS},()=>Array(COLS).fill(0));
   await sleep(460);
+}
+// カバ連鎖の「🔥Nチェイン」見出しを前の段と差し替えながら出す（キューを通さず即座に登る）
+let _comboEl=null;
+function showComboHeadline(n,mult){
+  if(_comboEl)_comboEl.remove();
+  const f=document.createElement('div');f.className='float chain';
+  f.textContent=`🔥 ${n}チェイン ×${mult.toFixed(1)}`;
+  boardEl.appendChild(f);_comboEl=f;
+  setTimeout(()=>{if(f===_comboEl)_comboEl=null;f.remove();},700);
 }
 
 // 瓦礫を上から落として新しい初期盤面を作る。偶発的な3揃いはそのまま連鎖（A案・ジャックポット歓迎）
@@ -1057,6 +1090,8 @@ function floatScoreAt(tileId,n){
 }
 function shake(){boardEl.classList.remove('shake');void boardEl.offsetWidth;boardEl.classList.add('shake');setTimeout(()=>boardEl.classList.remove('shake'),360);}
 function burst(){const ico=['✨','💫','⭐','🦛'];for(let i=0;i<8;i++){const p=document.createElement('div');p.className='particle';const ang=Math.random()*6.28,dist=42+Math.random()*55;p.style.left=(35+Math.random()*30)+'%';p.style.top=(30+Math.random()*30)+'%';p.style.setProperty('--tx',(Math.cos(ang)*dist)+'px');p.style.setProperty('--ty',(Math.sin(ang)*dist)+'px');p.textContent=ico[i%4];boardEl.appendChild(p);setTimeout(()=>p.remove(),620);}}
+// 指定マス(c,r)の中心で弾けるパーティクル（集合→ポンッ用）
+function burstAt(c,r){const ico=['✨','💫','⭐'];const x=(c+0.5)/COLS*100,y=(r+0.5)/ROWS*100;for(let i=0;i<7;i++){const p=document.createElement('div');p.className='particle';const ang=Math.random()*6.28,dist=30+Math.random()*45;p.style.left=x+'%';p.style.top=y+'%';p.style.setProperty('--tx',(Math.cos(ang)*dist)+'px');p.style.setProperty('--ty',(Math.sin(ang)*dist)+'px');p.textContent=ico[i%3];boardEl.appendChild(p);setTimeout(()=>p.remove(),620);}}
 
 
 function clearGame(){
