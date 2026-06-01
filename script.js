@@ -7,8 +7,7 @@ window.onerror=function(msg,src,line,col,err){
 // ─ 定数 ─
 let COLS=5,ROWS=8;
 const DANGER_ROW=1;
-const WAVE_INTERVAL=10;     // 波の初期間隔（手数）
-let _dpWaveInterval=10,_dpBlockRate=0.35; // デバッグパネル用パラメータ
+let _dpWaveInterval=null,_dpBlockRate=null; // デバッグパネルで上書きした時だけ値が入る（通常はステージ設定を使う）
 
 // ─ ステージ設定（盤面常に7×10固定） ─
 const BOARD_COLS=7,BOARD_ROWS=10; // 全ステージ共通
@@ -16,11 +15,11 @@ const BOARD_COLS=7,BOARD_ROWS=10; // 全ステージ共通
 // rWalnut/rShell＝瓦礫落下での出現確率、wWalnut/wShell＝せりあがり波での混入確率
 const STAGE_CONFIG=[
   null,
-  {goal:1, rWalnut:1.00, rShell:0.35, wWalnut:0.15, wShell:0.05}, // Stage 1
-  {goal:2, rWalnut:1.00, rShell:0.30, wWalnut:0.13, wShell:0.04}, // Stage 2
-  {goal:2, rWalnut:0.80, rShell:0.22, wWalnut:0.10, wShell:0.03}, // Stage 3
-  {goal:3, rWalnut:0.60, rShell:0.15, wWalnut:0.07, wShell:0.02}, // Stage 4
-  {goal:3, rWalnut:0.45, rShell:0.10, wWalnut:0.05, wShell:0.015},// Stage 5（エンドレスもこれ）
+  {goal:1, waveInterval:10, rockChance:0.30, rWalnut:1.00, rShell:0.35, wWalnut:0.15, wShell:0.05}, // Stage 1（両方やさしい）
+  {goal:2, waveInterval:8,  rockChance:0.30, rWalnut:1.00, rShell:0.30, wWalnut:0.13, wShell:0.04}, // Stage 2（波が速く）
+  {goal:2, waveInterval:8,  rockChance:0.38, rWalnut:0.80, rShell:0.22, wWalnut:0.10, wShell:0.03}, // Stage 3（波が重く）
+  {goal:3, waveInterval:6,  rockChance:0.38, rWalnut:0.60, rShell:0.15, wWalnut:0.07, wShell:0.02}, // Stage 4（波が速く）
+  {goal:3, waveInterval:6,  rockChance:0.46, rWalnut:0.45, rShell:0.10, wWalnut:0.05, wShell:0.015},// Stage 5（波が重く／∞は間隔5・岩0.50で別途）
 ];
 const TOTAL_STAGES=5;
 const ANIMALS=[null,{emo:'🐹',nm:'ハムスター',cls:'t1'},{emo:'🐿️',nm:'リス',cls:'t2'},{emo:'🦆',nm:'アヒル',cls:'t3'},{emo:'🦦',nm:'カワウソ',cls:'t4'},{emo:'🦛',nm:'コビトカバ',cls:'t5'}];
@@ -308,7 +307,7 @@ function renderLogPanel(){
 function getTotalKills(){return Object.values(killCounts).reduce((a,b)=>a+b,0);}
 function getWaveRows(){return 1;} // 常に1段固定
 function getRockChance(){
-  return typeof _dpBlockRate!=='undefined'?_dpBlockRate:0.35;
+  return _dpBlockRate??(currentStage>TOTAL_STAGES?0.50:curStageCfg().rockChance);
 }
 function rollTier(){const r=Math.random()*100;return r<70?1:r<95?2:3;} // ハム70%、リス25%、アヒル5%、カワウソ0%
 function rollRiseTier(){const r=Math.random();return r<.45?1:r<.73?2:r<.89?3:4;} // フラット
@@ -321,7 +320,7 @@ function updateQueue(){cnowEl.className='e t'+current;cnowEl.textContent='';cnex
 
 // ─ 波間隔 ─
 function resetWaveInterval(){
-  const base=typeof _dpWaveInterval!=='undefined'?_dpWaveInterval:WAVE_INTERVAL;
+  const base=_dpWaveInterval??(currentStage>TOTAL_STAGES?5:curStageCfg().waveInterval);
   currentWaveInterval=base;
   dropsUntilWave=base;
 }
