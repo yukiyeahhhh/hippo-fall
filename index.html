@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
 <link rel="manifest" href="manifest.json">
+<script src="analytics.js"></script>
 <style>
   :root{
     --bg1:#fef3e2;--bg2:#fde4cf;--board:#e9c9a8;--cell:#f6e4cd;
@@ -184,7 +185,7 @@
       <button class="btn btn-main" onclick="onStart()">▶ はじめる</button>
       <button class="btn btn-sub" onclick="onHelp()">📖 あそびかた</button>
       <button class="btn btn-sub" onclick="onShare()">🔗 シェアする</button>
-      <button class="btn btn-sub" onclick="window.open('https://forms.gle/Q12ew2W9Xh6ttDBz6','_blank')">💬 感想・バグ報告</button>
+      <button class="btn btn-sub" onclick="window.track&&window.track('feedback_click',{from:'title'});window.open('https://forms.gle/Q12ew2W9Xh6ttDBz6','_blank')">💬 感想・バグ報告</button>
     </div>
 
   </div>
@@ -305,7 +306,7 @@
   document.addEventListener('touchstart',onFirstInteraction);
   document.addEventListener('click',onFirstInteraction);
 
-  function onStart(){ location.href='game.html'; }
+  function onStart(){ window.track&&window.track('start_tap'); location.href='game.html'; }
   // あそびかたはページ遷移せず、タイトル上のオーバーレイで表示（遷移すると一瞬ゲーム画面に入ってしまうため）
   function onHelp(){ const p=document.getElementById('helpPanel'); if(p.classList.contains('show'))return; p.classList.add('show'); history.pushState({help:1},''); }
   function closeHelp(){ document.getElementById('helpPanel').classList.remove('show'); }

@@ -71,7 +71,7 @@
           <!-- クリア時のみ表示 -->
           <button class="btn" id="clearOkBtn" style="display:none;">つぎへ / もういちど</button>
           <button class="share-btn" id="shareBtn">シェア📤</button>
-          <button class="fb-btn" onclick="window.open('https://forms.gle/Q12ew2W9Xh6ttDBz6','_blank')">💬 感想を送る</button>
+          <button class="fb-btn" onclick="window.track&&window.track('feedback_click',{from:'result'});window.open('https://forms.gle/Q12ew2W9Xh6ttDBz6','_blank')">💬 感想を送る</button>
         </div>
       </div>
       </div>
@@ -130,6 +130,20 @@
     <button class="restart-opt restart-opt-full" onclick="tutorialNo()">
       <span class="ro-emo">▶</span>
       <span class="ro-body"><b>そのまま始める</b><br><span>すぐにゲーム開始</span></span>
+    </button>
+  </div>
+</div>
+<div class="restart-modal" id="continueModal">
+  <div class="restart-box">
+    <div class="restart-title">▶ つづきから？</div>
+    <div class="restart-sub">前回の<b>ステージ<span id="continueStage">1</span></b>から続けられます。</div>
+    <button class="restart-opt" onclick="onContinueResume()">
+      <span class="ro-emo">▶</span>
+      <span class="ro-body"><b>つづきから</b><br><span>ステージ<span id="continueStage2">1</span>から再開</span></span>
+    </button>
+    <button class="restart-opt restart-opt-full" onclick="onContinueFresh()">
+      <span class="ro-emo">🔄</span>
+      <span class="ro-body"><b>最初から</b><br><span>ステージ1からやり直す</span></span>
     </button>
   </div>
 </div>
@@ -295,6 +309,7 @@
     <div class="cutin-message" id="cutinMessage"></div>
   </div>
 </div>
+<script src="analytics.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
