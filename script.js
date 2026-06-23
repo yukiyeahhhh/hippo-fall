@@ -616,7 +616,7 @@ async function showStageClearAndAdvance(){
   // ステージクリア演出
   const f=document.createElement('div');
   f.className='levelup-pop';
-  f.innerHTML=`<span class="lu-emo"><img src="assets/pop_clear.webp" alt=""></span><span class="lu-txt"><span class="lu-line">ステージ${currentStage}</span><span class="lu-line">クリア！</span></span>`;
+  f.innerHTML=`<span class="lu-emo"><img src="assets/pop_clear.webp" alt=""></span><span class="lu-txt"><span class="lu-line">ステージ${currentStage} クリア！</span></span>`;
   boardEl.appendChild(f);
   SFX.bigmerge(5);burst();burst();burst();
   await sleep(1600);
@@ -626,7 +626,7 @@ async function showStageClearAndAdvance(){
   if(currentStage>=TOTAL_STAGES){
     const gc=document.createElement('div');
     gc.className='levelup-pop';
-    gc.innerHTML='<span class="lu-emo"><img src="assets/pop_allclear.webp" alt=""></span><span class="lu-txt"><span class="lu-line">ぜんぶクリア！</span><span class="lu-line">大成功！</span></span>';
+    gc.innerHTML='<span class="lu-emo"><img src="assets/pop_allclear.webp" alt=""></span><span class="lu-txt"><span class="lu-line">ぜんぶクリア！ 大成功！</span></span>';
     boardEl.appendChild(gc);
     SFX.bigmerge(5);burst();burst();burst();burst();
     await sleep(2000);
@@ -656,7 +656,7 @@ async function showStageClearAndAdvance(){
   if(now.iv<prev.iv)ch.push('🔺 せりあがりが速くなった');
   if(now.rock>prev.rock)ch.push('🪨 おじゃま岩が増える');
   const chHtml=ch.length?`<span class="lu-change">${ch.join('<br>')}</span>`:'';
-  g.innerHTML=`<span class="lu-emo"><img src="assets/${isEndless?'pop_endless':'pop_stage'}.webp" alt=""></span><span class="lu-txt">${isEndless?'<span class="lu-line">ENDLESS</span><span class="lu-line">MODE</span>':'<span class="lu-line">STAGE '+currentStage+'/'+TOTAL_STAGES+'</span>'}</span>${chHtml}`;
+  g.innerHTML=`<span class="lu-emo"><img src="assets/${isEndless?'pop_endless':'pop_stage'}.webp" alt=""></span><span class="lu-txt">${isEndless?'<span class="lu-line">ENDLESS MODE</span>':'<span class="lu-line">STAGE '+currentStage+' / '+TOTAL_STAGES+'</span>'}</span>${chHtml}`;
   boardEl.appendChild(g);
   await sleep(ch.length?1700:1100);
   g.remove();
