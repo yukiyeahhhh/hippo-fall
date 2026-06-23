@@ -25,10 +25,12 @@
   .risecount.warn{color:var(--danger);background:rgba(224,54,74,.12);}
   .help-btn{background:rgba(255,255,255,.6);color:var(--ink-soft);border:none;border-radius:9px;font-family:inherit;font-weight:800;font-size:11px;padding:4px 10px;cursor:pointer;align-self:center;margin-bottom:6px;}
   /* 「あそびかた」を見る独立CTA（迷ったプレイヤーがすぐ見つけられるよう目立たせる） */
-  .help-cta{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,.72);color:var(--accent-d);border:2px solid var(--accent);border-radius:12px;font-family:inherit;font-weight:800;font-size:14px;padding:7px;margin-bottom:3px;cursor:pointer;box-shadow:0 3px 0 rgba(210,118,63,.2);transition:transform .08s,box-shadow .08s;}
+  /* 進化ガイド(左)＋あそびかたCTA(右)を1行に統合して縦を節約（盤面を広く取る） */
+  .info-bar{display:flex;align-items:stretch;gap:6px;margin-bottom:3px;}
+  .help-cta{flex-shrink:0;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,.72);color:var(--accent-d);border:2px solid var(--accent);border-radius:12px;font-family:inherit;font-weight:800;font-size:14px;padding:6px 14px;cursor:pointer;box-shadow:0 3px 0 rgba(210,118,63,.2);transition:transform .08s,box-shadow .08s;}
   .help-cta:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(210,118,63,.2);}
   /* 常時表示の進化ガイド（スイカゲーム風：合体の順番をいつでも確認できる） */
-  .evo-guide{display:flex;align-items:center;justify-content:center;gap:3px;background:rgba(255,255,255,.5);border-radius:10px;padding:3px 6px;margin-bottom:3px;}
+  .evo-guide{flex:1;display:flex;align-items:center;justify-content:center;gap:3px;background:rgba(255,255,255,.5);border-radius:10px;padding:3px 6px;}
   .evo-guide img{width:22px;height:22px;object-fit:contain;display:block;}
   .evo-guide .arr{font-size:10px;font-weight:800;color:var(--accent);}
   .board-wrap{display:flex;justify-content:center;align-items:center;flex:1;min-height:0;}

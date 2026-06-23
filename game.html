@@ -22,7 +22,16 @@
       <button class="help-btn" id="debugBtn" onclick="toggleDebug()" style="margin:0;padding:5px 8px;font-size:10px;display:none;">⚙️</button>
     </div>
   </div>
-  <button class="help-cta" onclick="toggleHelp()">❓ あそびかた を見る</button>
+  <div class="info-bar">
+    <div class="evo-guide" aria-hidden="true">
+      <img src="assets/tile_t1.webp" alt=""><span class="arr">▶</span>
+      <img src="assets/tile_t2.webp" alt=""><span class="arr">▶</span>
+      <img src="assets/tile_t3.webp" alt=""><span class="arr">▶</span>
+      <img src="assets/tile_t4.webp" alt=""><span class="arr">▶</span>
+      <img src="assets/tile_t5.webp" alt="">
+    </div>
+    <button class="help-cta" onclick="toggleHelp()">❓ あそびかた</button>
+  </div>
   <div class="queue">
     <div class="qpair">
       <span class="qbox qnow">おとす<span class="e" id="cnow">🐹</span></span>
@@ -36,13 +45,6 @@
     <span class="goal-label" id="goalLabel">STAGE <b id="stageNum">1</b> ／ 目標スコア</span>
     <div class="goal-bar-bg"><div class="goal-bar-fill" id="goalFill"></div></div>
     <span class="goal-count" id="goalCount">0/1</span>
-  </div>
-  <div class="evo-guide" aria-hidden="true">
-    <img src="assets/tile_t1.webp" alt=""><span class="arr">▶</span>
-    <img src="assets/tile_t2.webp" alt=""><span class="arr">▶</span>
-    <img src="assets/tile_t3.webp" alt=""><span class="arr">▶</span>
-    <img src="assets/tile_t4.webp" alt=""><span class="arr">▶</span>
-    <img src="assets/tile_t5.webp" alt="">
   </div>
   <div class="game-area">
       <div class="board-wrap">
