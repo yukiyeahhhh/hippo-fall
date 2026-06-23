@@ -7,8 +7,8 @@
   body.endless{--bg1:#ede0ff;--bg2:#d0b8f8;--board:#8860c8;--cell:#e0d0f8;--accent:#8040d0;--accent-d:#6028a8;}
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{height:100%;}
-  body{font-family:'M PLUS Rounded 1c','Hiragino Maru Gothic ProN','Yu Gothic',system-ui,sans-serif;background:radial-gradient(120% 120% at 50% 0%,var(--bg1) 0%,var(--bg2) 100%);color:var(--ink);display:flex;align-items:flex-start;justify-content:center;height:100dvh;padding:6px 8px;overflow-y:auto;user-select:none;touch-action:manipulation;}
-  .wrap{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:stretch;padding-bottom:4px;}
+  body{font-family:'M PLUS Rounded 1c','Hiragino Maru Gothic ProN','Yu Gothic',system-ui,sans-serif;background:radial-gradient(120% 120% at 50% 0%,var(--bg1) 0%,var(--bg2) 100%);color:var(--ink);display:flex;align-items:stretch;justify-content:center;height:100dvh;padding:6px 8px;overflow:hidden;user-select:none;touch-action:manipulation;}
+  .wrap{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:stretch;padding-bottom:4px;min-height:0;}
   .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;gap:8px;}
   .title h1{font-size:clamp(19px,5.5vw,24px);font-weight:800;line-height:1;color:#ff9d4d;-webkit-text-stroke:2px #fff;paint-order:stroke fill;text-shadow:0 2px 0 var(--accent-d),0 3px 5px rgba(150,90,40,.28);}
   .title .sub{font-size:9px;color:var(--ink-soft);font-weight:700;margin-top:2px;letter-spacing:1px;}
@@ -31,8 +31,8 @@
   .evo-guide{display:flex;align-items:center;justify-content:center;gap:3px;background:rgba(255,255,255,.5);border-radius:10px;padding:3px 6px;margin-bottom:3px;}
   .evo-guide img{width:22px;height:22px;object-fit:contain;display:block;}
   .evo-guide .arr{font-size:10px;font-weight:800;color:var(--accent);}
-  .board-wrap{display:flex;justify-content:center;flex:1;}
-  .board{position:relative;width:100%;max-height:calc(100dvh - 326px);aspect-ratio:7/10;background:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.4px) 0 0/15px 15px,radial-gradient(135% 90% at 50% -10%,rgba(255,255,255,.16),transparent 55%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(80,40,10,.1)),var(--board);border-radius:18px;padding:var(--gap);box-shadow:0 14px 30px -12px rgba(120,70,30,.45),inset 0 2px 4px rgba(255,255,255,.4);cursor:pointer;overflow:hidden;}
+  .board-wrap{display:flex;justify-content:center;align-items:center;flex:1;min-height:0;}
+  .board{position:relative;height:100%;width:auto;max-width:100%;aspect-ratio:7/10;background:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.4px) 0 0/15px 15px,radial-gradient(135% 90% at 50% -10%,rgba(255,255,255,.16),transparent 55%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(80,40,10,.1)),var(--board);border-radius:18px;padding:var(--gap);box-shadow:0 14px 30px -12px rgba(120,70,30,.45),inset 0 2px 4px rgba(255,255,255,.4);cursor:pointer;overflow:hidden;}
   .grid{position:absolute;inset:var(--gap);display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(10,1fr);gap:var(--gap);}
   .grid .bg{background:linear-gradient(158deg,rgba(0,0,0,.07),rgba(255,255,255,.05)),var(--cell);border-radius:11px;box-shadow:inset 0 2px 4px rgba(120,70,30,.18),inset 0 -1px 1px rgba(255,255,255,.55);transition:background .1s;}
   .grid .bg.aim{background:#f1d4ab;} .grid .bg.dz0{background:rgba(224,54,74,.22);} .grid .bg.dz1{background:rgba(224,54,74,.1);}
@@ -166,9 +166,9 @@
   .skill-slot-big.charge-pulse{animation:slotpulse .38s ease;}
   @keyframes slotpulse{0%,100%{transform:scale(1);}45%{transform:scale(1.13);box-shadow:0 0 12px 3px rgba(255,200,40,.8);}}
   /* ── ローグライト 2カラムレイアウト ── */
-  .game-area{display:flex;flex-direction:column;gap:6px;align-items:stretch;width:100%;}
+  .game-area{display:flex;flex-direction:column;gap:6px;align-items:stretch;width:100%;flex:1;min-height:0;}
   /* スキルバー（盤面下の横一列） */
-  .skill-bar{display:flex;gap:6px;width:100%;align-items:stretch;background:rgba(255,255,255,.45);border-radius:14px;padding:6px;box-shadow:0 4px 12px -4px rgba(120,70,30,.18);}
+  .skill-bar{display:flex;gap:6px;width:100%;align-items:stretch;background:rgba(255,255,255,.45);border-radius:14px;padding:6px;box-shadow:0 4px 12px -4px rgba(120,70,30,.18);flex-shrink:0;}
   .skill-bar .skill-slot-big{flex:1;border-bottom:none;}
   .skill-bar .log-open-btn{flex:0 0 38px;width:38px;margin-top:0;align-self:stretch;}
   .lv-side{display:flex;flex-direction:column;align-items:center;gap:1px;flex:1;padding:5px 0;border-bottom:1px solid rgba(150,100,60,.08);}
