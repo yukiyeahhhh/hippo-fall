@@ -25,10 +25,14 @@
   .risecount.warn{color:var(--danger);background:rgba(224,54,74,.12);}
   .help-btn{background:rgba(255,255,255,.6);color:var(--ink-soft);border:none;border-radius:9px;font-family:inherit;font-weight:800;font-size:11px;padding:4px 10px;cursor:pointer;align-self:center;margin-bottom:6px;}
   /* 「あそびかた」を見る独立CTA（迷ったプレイヤーがすぐ見つけられるよう目立たせる） */
-  .help-cta{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,.72);color:var(--accent-d);border:2px solid var(--accent);border-radius:12px;font-family:inherit;font-weight:800;font-size:14px;padding:9px;margin-bottom:4px;cursor:pointer;box-shadow:0 3px 0 rgba(210,118,63,.2);transition:transform .08s,box-shadow .08s;}
+  .help-cta{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,.72);color:var(--accent-d);border:2px solid var(--accent);border-radius:12px;font-family:inherit;font-weight:800;font-size:14px;padding:7px;margin-bottom:3px;cursor:pointer;box-shadow:0 3px 0 rgba(210,118,63,.2);transition:transform .08s,box-shadow .08s;}
   .help-cta:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(210,118,63,.2);}
+  /* 常時表示の進化ガイド（スイカゲーム風：合体の順番をいつでも確認できる） */
+  .evo-guide{display:flex;align-items:center;justify-content:center;gap:3px;background:rgba(255,255,255,.5);border-radius:10px;padding:3px 6px;margin-bottom:3px;}
+  .evo-guide img{width:22px;height:22px;object-fit:contain;display:block;}
+  .evo-guide .arr{font-size:10px;font-weight:800;color:var(--accent);}
   .board-wrap{display:flex;justify-content:center;flex:1;}
-  .board{position:relative;width:100%;max-height:calc(100dvh - 250px);aspect-ratio:7/10;background:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.4px) 0 0/15px 15px,radial-gradient(135% 90% at 50% -10%,rgba(255,255,255,.16),transparent 55%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(80,40,10,.1)),var(--board);border-radius:18px;padding:var(--gap);box-shadow:0 14px 30px -12px rgba(120,70,30,.45),inset 0 2px 4px rgba(255,255,255,.4);cursor:pointer;overflow:hidden;}
+  .board{position:relative;width:100%;max-height:calc(100dvh - 326px);aspect-ratio:7/10;background:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.4px) 0 0/15px 15px,radial-gradient(135% 90% at 50% -10%,rgba(255,255,255,.16),transparent 55%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(80,40,10,.1)),var(--board);border-radius:18px;padding:var(--gap);box-shadow:0 14px 30px -12px rgba(120,70,30,.45),inset 0 2px 4px rgba(255,255,255,.4);cursor:pointer;overflow:hidden;}
   .grid{position:absolute;inset:var(--gap);display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(10,1fr);gap:var(--gap);}
   .grid .bg{background:linear-gradient(158deg,rgba(0,0,0,.07),rgba(255,255,255,.05)),var(--cell);border-radius:11px;box-shadow:inset 0 2px 4px rgba(120,70,30,.18),inset 0 -1px 1px rgba(255,255,255,.55);transition:background .1s;}
   .grid .bg.aim{background:#f1d4ab;} .grid .bg.dz0{background:rgba(224,54,74,.22);} .grid .bg.dz1{background:rgba(224,54,74,.1);}
