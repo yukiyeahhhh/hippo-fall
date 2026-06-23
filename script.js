@@ -727,6 +727,7 @@ async function spawnRubble(plan,animate){
 // ─ 初期盤面セットアップ（瓦礫を上から落として組む。開始盤面は3揃いを作らず連鎖もしない＝静かに考えるスタート） ─
 async function setupStage(stage){
   busy=true;cancelAiming();
+  const gv=gameVersion; // 生成アニメ中に新ゲーム/リトライが割り込んだら、古い盤面生成を破棄する
   grid=Array.from({length:ROWS},()=>Array(COLS).fill(0));
   tiles={};uid=1;activeDropId=0;
   tilesEl.innerHTML='';
@@ -736,6 +737,7 @@ async function setupStage(stage){
   resetWaveInterval();
   nextWaveNoBlocks=false;
   await spawnRubble(planRubble(true),true);
+  if(gameVersion!==gv)return; // 割り込み発生＝新しい盤面生成が走っている。busyはそちらが管理するので触らない
   busy=false;
 }
 function spawnBlockAt(r,c){
