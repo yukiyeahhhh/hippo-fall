@@ -85,6 +85,14 @@ function loadHistory(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'[]')
 function saveHistory(e){let h=loadHistory();h.unshift(e);h=h.sort((a,b)=>(b.stage||0)-(a.stage||0)||(b.maxChain||0)-(a.maxChain||0)).slice(0,5);try{localStorage.setItem(LS_KEY,JSON.stringify(h));}catch(e){}return h;}
 function renderHistory(h){const el=document.getElementById('historyList');if(!el)return;el.innerHTML=h.slice(0,5).map((e,i)=>{const m=['🥇','🥈','🥉','4.','5.'][i];const d=new Date(e.date);const ds=`${d.getMonth()+1}/${d.getDate()}`;const stageStr=e.stage?`Stage${e.stage}`:'?';return`<li><span class="history-rank">${m}</span><span>${stageStr}</span><span>最大${e.maxChain}チェイン</span><span>${ds}</span></li>`;}).join('');}
 
+// ─ 進行状況のセーブ（到達ステージから「つづきから」） ─
+const LS_SAVE='animalDrop_save_v1';
+function saveProgress(){try{localStorage.setItem(LS_SAVE,JSON.stringify({stage:currentStage,score,ts:Date.now()}));}catch(e){}}
+function loadSave(){try{return JSON.parse(localStorage.getItem(LS_SAVE)||'null');}catch(e){return null;}}
+function clearSave(){try{localStorage.removeItem(LS_SAVE);}catch(e){}}
+// 保存ステージから再開（盤面はそのステージで作り直し、スコアは引き継ぐ）
+function continueFromSave(s){currentStage=s.stage;score=s.score||0;renderScore();retryStage('▶ ステージ'+currentStage+' からつづき！');}
+
 // ─ 共有 AudioContext ─
 let _audioCtx=null;
 function getCtx(){if(!_audioCtx)try{_audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}if(_audioCtx&&_audioCtx.state==='suspended')_audioCtx.resume();return _audioCtx;}
@@ -628,11 +636,14 @@ async function showStageClearAndAdvance(){
   // ─ スキルゲージのリセット（溜め防止） ─
   for(const k of Object.keys(activeSkills))activeSkills[k].gauge=0;
 
+  // クリアしたステージを計測
+  window.track&&window.track('stage_clear',{stage:currentStage});
   // 次ステージへ移行
   currentStage++;
   hippoMade=0;
   stageScore=0;
   hippoGoal=getStageGoal(currentStage);
+  saveProgress(); // 到達ステージを保存（次回「つづきから」用）
   updateAtmosphere();
   updateStageUI();updateSkillSlotsUI();
 
@@ -1089,6 +1100,7 @@ function burstAt(c,r){const ico=['✨','💫','⭐'];const x=(c+0.5)/COLS*100,y=
 
 
 function clearGame(){
+  window.track&&window.track('game_clear',{stage:currentStage,max_chain:maxChain});
   const entry={stage:currentStage,maxChain,date:Date.now(),cleared:true};
   const history=saveHistory(entry);
   document.getElementById('ovEmo').textContent='🎉';
@@ -1104,7 +1116,7 @@ function clearGame(){
   BGM.start(currentStage);burst();burst();burst();shake();
 }
 // ─ このステージからやり直す ─
-function retryStage(){
+function retryStage(toastMsg){
   overlay.classList.remove('show','cleared');
   boardEl.classList.remove('close','shake');
   document.body.className='';
@@ -1133,11 +1145,12 @@ function retryStage(){
   requestAnimationFrame(()=>{const d=document.getElementById('dangerLine'),l=document.getElementById('dangerLabel');if(d)d.style.top=topOf(DANGER_ROW);if(l)l.style.top=topOf(DANGER_ROW);});
   BGM.start(currentStage);
   setupStage(currentStage);
-  floatEl('toast','🔄 ステージ '+currentStage+' やり直し！');
+  floatEl('toast',(typeof toastMsg==='string'&&toastMsg)?toastMsg:'🔄 ステージ '+currentStage+' やり直し！');
 }
 
 function endGame(emo,title){
   cancelAiming();
+  window.track&&window.track('game_over',{stage:currentStage,max_chain:maxChain});
   const entry={stage:currentStage,maxChain,date:Date.now()};
   const history=saveHistory(entry);
   document.getElementById('ovEmo').textContent=emo;document.getElementById('ovTitle').textContent=title;
@@ -1187,13 +1200,13 @@ boardEl.addEventListener('pointerup',e=>{
   }
 });
 boardEl.addEventListener('pointerleave',()=>bgCells.forEach(d=>d.classList.remove('aim')));
-document.getElementById('ovBtn').onclick=newGame;
-document.getElementById('retryStageBtn').onclick=retryStage;
-document.getElementById('clearOkBtn').onclick=newGame;
+document.getElementById('ovBtn').onclick=()=>{clearSave();newGame();};
+document.getElementById('retryStageBtn').onclick=()=>retryStage();
+document.getElementById('clearOkBtn').onclick=()=>{clearSave();newGame();};
 function showRestartModal(){history.pushState({modal:'restart'},'');document.getElementById('restartModal').classList.add('show');}
 function hideRestartModal(){document.getElementById('restartModal').classList.remove('show');}
 function confirmRetryStage(){hideRestartModal();retryStage();}
-function confirmNewGame(){hideRestartModal();newGame();}
+function confirmNewGame(){hideRestartModal();clearSave();newGame();}
 function showTitleModal(){history.pushState({modal:'title'},'');document.getElementById('titleModal').classList.add('show');}
 function hideTitleModal(){document.getElementById('titleModal').classList.remove('show');}
 function goToTitle(){_navigating=true;location.href='index.html';}
@@ -1242,6 +1255,7 @@ window.addEventListener('popstate',()=>{
   const lp=document.getElementById('logPanel');
   if(lp?.classList.contains('show')){lp.classList.remove('show');return;}
   if(document.getElementById('tutorialModal')?.classList.contains('show')){document.getElementById('tutorialModal').classList.remove('show');goToTitle();return;}
+  if(document.getElementById('continueModal')?.classList.contains('show')){document.getElementById('continueModal').classList.remove('show');beginGame();return;}
   if(document.getElementById('restartModal')?.classList.contains('show')){hideRestartModal();return;}
   if(document.getElementById('titleModal')?.classList.contains('show')){hideTitleModal();return;}
   // 何も開いていない → タイトルへ戻る確認
@@ -1251,7 +1265,11 @@ window.addEventListener('popstate',()=>{
 history.pushState({modal:'game'},'');
 try{newGame();}catch(e){window.onerror(e.message,'',0,0,e);}
 gamePaused=true; // 盤面は通常どおり組みつつ、チュートリアル選択まで操作だけ止める
-function beginGame(){gamePaused=false;const dl=document.getElementById('dangerLine'),lb=document.getElementById('dangerLabel');if(dl)dl.style.top=topOf(DANGER_ROW);if(lb)lb.style.top=topOf(DANGER_ROW);render();}
+function beginGame(){gamePaused=false;window.track&&window.track('game_start',{stage:currentStage});const dl=document.getElementById('dangerLine'),lb=document.getElementById('dangerLabel');if(dl)dl.style.top=topOf(DANGER_ROW);if(lb)lb.style.top=topOf(DANGER_ROW);render();}
+// ─ 「つづきから / 最初から」モーダル ─
+function showContinueModal(){const s=loadSave();const n=s?s.stage:1;const e1=document.getElementById('continueStage');if(e1)e1.textContent=n;const e2=document.getElementById('continueStage2');if(e2)e2.textContent=n;history.pushState({modal:'continue'},'');document.getElementById('continueModal').classList.add('show');}
+function onContinueResume(){document.getElementById('continueModal').classList.remove('show');const s=loadSave();if(s&&s.stage>1){window.track&&window.track('continue_resume',{stage:s.stage});continueFromSave(s);}else beginGame();}
+function onContinueFresh(){document.getElementById('continueModal').classList.remove('show');clearSave();window.track&&window.track('continue_fresh');beginGame();}
 function showTutorialModal(){history.pushState({modal:'tutorial'},'');document.getElementById('tutorialModal').classList.add('show');}
 function tutorialYes(){markTutorialSeen();document.getElementById('tutorialModal').classList.remove('show');_preGameMode='tutorial-help';openHelp();}
 function tutorialNo(){markTutorialSeen();document.getElementById('tutorialModal').classList.remove('show');beginGame();}
@@ -1261,7 +1279,9 @@ if(new URLSearchParams(location.search).get('debug')==='1'){const db=document.ge
 const LS_SEEN_TUT='animalDrop_seenTutorial_v1';
 function markTutorialSeen(){try{localStorage.setItem(LS_SEEN_TUT,'1');}catch(e){}}
 function hasSeenTutorial(){try{return localStorage.getItem(LS_SEEN_TUT)==='1';}catch(e){return false;}}
+const _save=loadSave();
 if(new URLSearchParams(location.search).get('help')==='1'){_preGameMode='help-from-title';openHelp();}
+else if(_save&&_save.stage>1){showContinueModal();} // 保存あり＝つづきから／最初から を選ばせる
 else if(hasSeenTutorial()){beginGame();} // 2回目以降はチュートリアル確認を出さずに即開始
 else{showTutorialModal();}
 // ページ離脱・リロード時の確認（ゲームオーバー後は不要）
