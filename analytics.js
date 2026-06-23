@@ -1,7 +1,7 @@
 // ─ アクセス＆プレイ計測（Google Analytics 4） ─
 // 使い方: 下の GA_ID に GA4 の「測定ID」(G-XXXXXXXXXX) を入れると計測が始まる。
 // 空のままなら完全に無効（何も読み込まず、エラーも出ない）。
-window.GA_ID = ''; // ← ここに G-XXXXXXXXXX を入れる
+window.GA_ID = 'G-D1VYYE5KDX'; // ← GA4 測定ID
 
 (function () {
   if (!window.GA_ID) return; // ID未設定なら計測しない
