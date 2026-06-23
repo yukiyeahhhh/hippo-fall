@@ -220,21 +220,36 @@ const BGM=(()=>{
   let playingId=null;
   try{const s=JSON.parse(localStorage.getItem(LS_BGM)||'{}');sel=s.sel||'auto';vol=s.vol??0.5;_sfxVol=s.sfxVol??1.5;}catch(e){}
   function save(){try{localStorage.setItem(LS_BGM,JSON.stringify({sel,vol,sfxVol:_sfxVol}));}catch(e){}}
-  function stopAudio(){audio.pause();audio.src='';playingId=null;}
+  let _fadeTimer=null;
+  function _clearFade(){if(_fadeTimer){clearInterval(_fadeTimer);_fadeTimer=null;}}
+  function _fade(to,ms,done){_clearFade();const from=audio.volume||0;const steps=Math.max(1,Math.round(ms/40));let i=0;_fadeTimer=setInterval(()=>{i++;audio.volume=Math.max(0,Math.min(1,from+(to-from)*i/steps));if(i>=steps){_clearFade();if(done)done();}},40);}
+  function stopAudio(){_clearFade();audio.pause();audio.src='';playingId=null;}
   function playMp3(id){
     const t=TRACKS.find(t=>t.id===id);if(!t||!t.src)return;
     if(playingId===id&&!audio.paused)return;
     // pauseせずsrcを変更：audio要素をplaying状態に保つことでiOS Safariのautoplay制限を回避
+    _clearFade();
     audio.src=t.src;
     audio.volume=vol;
     audio.play().catch(()=>{});
     playingId=id;
   }
-  function applyNow(stage){
+  // ステージ移行用：今の曲をフェードアウト→曲を差し替え→フェードインで唐突な切れを防ぐ
+  function playMp3Fade(id){
+    const t=TRACKS.find(t=>t.id===id);if(!t||!t.src)return;
+    if(playingId===id&&!audio.paused){_fade(vol,400);return;}
+    if(audio.src&&!audio.paused){
+      _fade(0,500,()=>{audio.src=t.src;audio.volume=0;audio.play().catch(()=>{});playingId=id;_fade(vol,650);});
+    }else{
+      audio.src=t.src;audio.volume=0;audio.play().catch(()=>{});playingId=id;_fade(vol,650);
+    }
+  }
+  function applyNow(stage,useFade){
     const effectiveId=(sel==='auto')?stageToId(stage??currentStage??1):sel;
     if(effectiveId==='off'){stopAudio();MUSIC.stop();return;}
     if(effectiveId==='original'){stopAudio();MUSIC.start();return;}
-    MUSIC.stop();playMp3(effectiveId);
+    MUSIC.stop();
+    if(useFade)playMp3Fade(effectiveId);else playMp3(effectiveId);
   }
   return{
     tracks:TRACKS,
@@ -242,9 +257,9 @@ const BGM=(()=>{
     getVol(){return vol;},
     getSfxVol(){return _sfxVol;},
     setSel(id,stage){sel=id;save();applyNow(stage);},
-    setVol(v){vol=v;save();audio.volume=vol;},
+    setVol(v){vol=v;save();_clearFade();audio.volume=vol;},
     setSfxVol(v){_sfxVol=v;save();},
-    onStageChange(stage){if(sel==='auto')applyNow(stage);},
+    onStageChange(stage){if(sel==='auto')applyNow(stage,true);},
     start(stage){applyNow(stage);},
     stop(){stopAudio();MUSIC.stop();},
     pause(){audio.pause();},
