@@ -93,6 +93,8 @@
   .history-rank{color:var(--accent-d);min-width:22px;}
   .share-btn{background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;border-radius:12px;font-family:inherit;font-weight:800;font-size:13px;padding:9px 16px;cursor:pointer;box-shadow:0 4px 0 #0a6655;}
   .share-btn:active{transform:translateY(3px);}
+  .fb-btn{background:linear-gradient(135deg,#f0a06a,#d2763f);color:#fff;border:none;border-radius:12px;font-family:inherit;font-weight:800;font-size:13px;padding:9px 16px;cursor:pointer;box-shadow:0 4px 0 #b25d2c;}
+  .fb-btn:active{transform:translateY(3px);}
   .float{position:absolute;font-weight:800;pointer-events:none;z-index:7;left:50%;transform:translateX(-50%);animation:rise .9s ease-out forwards;white-space:nowrap;text-align:center;}
   .float.pts{font-size:14px;color:var(--accent-d);top:5px;text-shadow:0 1px 0 #fff,0 0 4px rgba(0,0,0,.2);}
   .float.chain{font-size:28px;color:var(--fire);top:34%;text-shadow:0 0 0 2px #fff,-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff,0 3px 8px rgba(0,0,0,.3);}
