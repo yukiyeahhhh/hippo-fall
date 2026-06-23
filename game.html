@@ -19,7 +19,7 @@
       <button class="help-btn" onclick="showTitleModal()" style="margin:0;padding:5px 8px;font-size:10px;">🏠</button>
       <button class="help-btn" id="restart" onclick="showRestartModal()" style="margin:0;padding:5px 8px;font-size:10px;">↺</button>
       <button class="help-btn" onclick="toggleMusic()" style="margin:0;padding:5px 8px;font-size:10px;">🎵</button>
-      <button class="help-btn" onclick="toggleDebug()" style="margin:0;padding:5px 8px;font-size:10px;">⚙️</button>
+      <button class="help-btn" id="debugBtn" onclick="toggleDebug()" style="margin:0;padding:5px 8px;font-size:10px;display:none;">⚙️</button>
       <button class="help-btn" onclick="toggleHelp()" style="margin:0;padding:5px 8px;font-size:10px;">❓</button>
     </div>
   </div>
@@ -165,8 +165,8 @@
 
     <div class="help-card">
       <div class="hc-title">🔺 せりあがり ＝ タイムアタック</div>
-      <div class="hc-row"><span class="hc-emo">🔺</span><span>一定の手数ごとに、下から<b>おじゃま岩がせりあがる。</b></span></div>
-      <div class="hc-row"><span class="hc-emo">🚫</span><span><b>おたすけアクションではおじゃま岩を消せない！</b>減らせるのは<b>クルミ・貝殻・カバの全破壊</b>だけ。</span></div>
+      <div class="hc-row"><span class="hc-emo">🔺</span><span>一定の手数ごとに、下から<b>新しい列がせりあがる（おじゃま岩も混ざる）。</b></span></div>
+      <div class="hc-row"><span class="hc-emo">🚫</span><span><b>おたすけアクションではおじゃま岩を消せない！</b>おじゃま岩を一掃できるのは<b>カバの全破壊</b>だけ（クルミ・貝殻は割れると自分が消えるよ）。</span></div>
       <div class="hc-row"><span class="hc-emo">⏱️</span><span>＝「積み上がる前に<b>カバを作って一掃できるか</b>」のタイムアタックが勝負！</span></div>
     </div>
 

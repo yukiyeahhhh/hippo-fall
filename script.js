@@ -1,6 +1,11 @@
 
 window.onerror=function(msg,src,line,col,err){
-  document.body.innerHTML='<div style="padding:20px;font-family:monospace;color:#c00;background:#fff"><b>⚠ JS Error (line '+line+')</b><br>'+msg+'<br><br>'+(err&&err.stack?err.stack:'')+'</div>';
+  var dbg=new URLSearchParams(location.search).get('debug')==='1';
+  if(dbg){
+    document.body.innerHTML='<div style="padding:20px;font-family:monospace;color:#c00;background:#fff"><b>⚠ JS Error (line '+line+')</b><br>'+msg+'<br><br>'+(err&&err.stack?err.stack:'')+'</div>';
+  }else{
+    document.body.innerHTML='<div style="padding:48px 24px;text-align:center;font-family:\'M PLUS Rounded 1c\',sans-serif;color:#6b4a32;background:#fef3e2;min-height:100vh"><div style="font-size:44px">😵</div><p style="font-weight:800;margin:14px 0">エラーが発生しちゃった…</p><button onclick="location.reload()" style="padding:11px 26px;border:none;border-radius:14px;background:#e8915b;color:#fff;font-weight:800;font-size:15px">リロード</button></div>';
+  }
   return true;
 };
 
@@ -45,6 +50,8 @@ let survivedDrops=0; // 生き残った手数
 let dropsUntilWave=10; // 次の波までの手数
 let currentWaveInterval=10; // 現在の波間隔
 let nextWaveNoBlocks=false; // リス「ひとやすみ」：次の1回の波はブロックを出さない
+let killCounts={1:0,2:0,3:0,4:0,5:0}; // 各tierの消滅数（旧:暗黙グローバル→明示宣言）
+let _navigating=false; // 意図したページ遷移（タイトルへ戻る等）時はbeforeunload確認を抑制
 const LS_LOG_KEY='animalDrop_gamelog_v1';
 function loadGameLog(){try{return JSON.parse(localStorage.getItem(LS_LOG_KEY)||'[]');}catch(e){return[];}}
 function saveGameLog(){try{localStorage.setItem(LS_LOG_KEY,JSON.stringify(gameLog));}catch(e){}}
@@ -98,7 +105,6 @@ const SFX={
   itemHippo(lv){const base=lv>=2?0.5:0.36;tone(98,'sine',0.6,base*0.6);[523,659,784,1047].forEach((f,i)=>{tone(f,'triangle',0.24,base,0.05+i*0.09);tone(f*2,'sine',0.14,base*0.28,0.05+i*0.09);});if(lv>=2)tone(1319,'triangle',0.4,base*0.6,0.42);},
   rise(){tone(160,'triangle',0.1,0.18);tone(214,'triangle',0.08,0.14,0.1);},
   gameover(){[392,330,262,196].forEach((f,i)=>tone(f,'triangle',0.26,0.22,i*0.13));},
-  draft(){[0,1,2,3,4].forEach(i=>tone(520+i*140,'sine',0.10,0.13,i*0.058));tone(1100,'sine',0.13,0.25,0.32);},
   chain(n){const k=Math.min(n,6);for(let i=0;i<k;i++)tone(523*Math.pow(1.16,i),'triangle',0.1,0.22,i*0.045);tone(523*Math.pow(1.16,k),'sine',0.14,0.16,k*0.045);},
 };
 
@@ -444,7 +450,7 @@ function hideAimBanner(){const b=document.getElementById('aimBanner');if(b)b.cla
 function handleAimTap(row,col){
   if(busy||!aiming)return;
   const id=grid[row]?.[col];
-  if(!id||!tiles[id]||tiles[id].rock){floatEl('toast','動物をタップしてね');return;}
+  if(!id||!tiles[id]||tiles[id].rock||tiles[id].gimmick){floatEl('toast','動物をタップしてね');return;}
   if(aiming.key==='refresh'){
     // 既に選んだ動物を再タップ→選択解除
     if(aiming.picks.includes(id)){
@@ -499,21 +505,13 @@ async function runDuckMarch(centerR,centerC){
 async function runOtterSwap(idA,idB){
   SFX.itemOtter();await showCutin('カワウソのおてだま！','');
   const A=tiles[idA],B=tiles[idB];
-  if(!A||!B||A.rock||B.rock){floatEl('toast','🦦 入れ替えできなかった');return;}
+  if(!A||!B||A.rock||B.rock||A.gimmick||B.gimmick){floatEl('toast','🦦 入れ替えできなかった');return;}
   const ar=A.r,ac=A.c,br=B.r,bc=B.c;
   grid[ar][ac]=idB;grid[br][bc]=idA;
   A.r=br;A.c=bc;B.r=ar;B.c=ac;
   A.skillHit=true;B.skillHit=true;
   render();floatEl('item','🦦 おてだま！');
   await sleep(400);
-}
-
-// ─ 発破職人：ブロック跡地にハムスタースポーン ─
-function spawnHamsterAt(r,c){
-  if(grid[r][c])return; // 既に何かあれば諦める
-  const id=uid++;
-  const t={id,tier:1,r,c,spawn:true};
-  tiles[id]=t;grid[r][c]=id;paint(t);
 }
 
 // ─ カバ誕生：盤面を全破壊（低tier→カバの順に集まって消える連鎖演出）→ 瓦礫が落ちて新しい初期盤面 ─
@@ -582,7 +580,9 @@ async function dropRubble(){
 async function checkStageClear(){
   if(currentStage<=TOTAL_STAGES && stageScore>=curStageCfg().scoreGoal){
     await showStageClearAndAdvance();
+    return true; // ステージが進行した
   }
+  return false;
 }
 
 // ─ ステージクリア演出＆次ステージへ ─
@@ -797,33 +797,6 @@ function isDanger(){for(const id in tiles)if(tiles[id].r<DANGER_ROW)return true;
 function checkClose(){let c=false;for(const id in tiles)if(tiles[id].r===DANGER_ROW)c=true;boardEl.classList.toggle('close',c);}
 function emptyCount(){let n=0;for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(!grid[r][c])n++;return n;}
 function isSpecial(t){return t&&(t.rock||t.gimmick);}
-// アイテム・カバ効果での消去：全tier対象、スコア付与、カバ誘発
-function clearWithBonuses(targets/*[[r,c],...]*/, bgFlash=false){
-  // BFSで消去対象を収集（カバを踏んだら即その行を展開）
-  const toClear=new Set(),hippoRows=new Set();
-  function add(r,c){
-    const id=grid[r][c];if(!id||!tiles[id]||toClear.has(id)||tiles[id].rock)return; // 岩はclearWithBonusesでは消さない
-    toClear.add(id);
-    if(tiles[id].tier===MAX_TIER&&!hippoRows.has(r)){
-      hippoRows.add(r);
-      for(let cc=0;cc<COLS;cc++)add(r,cc); // カバの行を全列展開
-    }
-  }
-  for(const[r,c]of targets)add(r,c);
-  // 消去前に座標を記録（tiles削除前）
-  const clearedCells=[];
-  for(const id of toClear){if(!tiles[id])continue;clearedCells.push({r:tiles[id].r,c:tiles[id].c,rock:!!tiles[id].rock});}
-  for(const id of toClear){if(!tiles[id])continue;const{r,c}=tiles[id];grid[r][c]=0;removeFade(id);}
-
-  if(hippoRows.size>0){
-    SFX.rowclear();burst();
-    if(hippoRows.size>=2){burst();shake();}
-    floatEl('chain',hippoRows.size>=2?`🦛💥 ${hippoRows.size}行クリア！`:'🦛💥 行クリア！');
-    // 光らせる
-    bgCells.forEach((d,i)=>{if(hippoRows.has(Math.floor(i/COLS))){d.style.background='rgba(255,140,0,.65)';setTimeout(()=>{d.style.background='';},380);}});
-  }
-  return hippoRows.size;
-}
 function ensureEl(t){let el=document.getElementById('tile-'+t.id);if(!el){el=document.createElement('div');el.id='tile-'+t.id;el.className='tile';el.innerHTML='<div class="inner"><span class="emo"></span><span class="nm"></span></div>';el.style.width=`calc((100% - var(--gap)*${COLS-1})/${COLS})`;el.style.height=`calc((100% - var(--gap)*${ROWS-1})/${ROWS})`;el.style.transition='none';el.style.left=leftOf(t.c);el.style.top=topOf(t.r);tilesEl.insertBefore(el,tilesEl.firstChild);void el.offsetWidth;el.style.transition='';}return el;}
 function paint(t){
   const el=ensureEl(t);
@@ -948,7 +921,9 @@ async function birthAnyHippos(){
 async function resolveBoard(){
   let chain=0,bornHippo=false;
   while(true){
-    const comps=findComponents();
+    // カバ(T5)同士が3つ以上隣接しても合体対象にしない＝合体可能(tier<MAX)のみ拾う。
+    // これを拾うと cp.tier>=MAX を continue するだけで盤面が変わらず無限ループになる（貝殻で複数カバ化等）。
+    const comps=findComponents().filter(cp=>cp.tier<MAX_TIER);
     if(comps.length===0){
       if(await breakReadyGimmicks())continue; // ギミックが割れた→盤面変化、再収束
       if(await birthAnyHippos())bornHippo=true; // 貝殻等で生まれたカバを拾う
@@ -1002,8 +977,10 @@ async function drop(col){
     const born=await resolveBoard();if(gameVersion!==gv)return;
     activeDropId=0;
     if(born)await handleHippoBorn();if(gameVersion!==gv)return;
-    await checkStageClear();if(gameVersion!==gv)return;
+    const advanced=await checkStageClear();if(gameVersion!==gv)return;
     if(isDanger()){endGame('💥','おじゃま岩があふれちゃった…');return;}
+    // ステージが進行した直後の手はこの落下分の波カウントを進めない（次ステージ開始手数を-1しないため）
+    if(advanced){current=next;next=rollTier();updateQueue();updateRiseCounter();return;}
     const wasClose=Object.values(tiles).some(t=>t.r<=DANGER_ROW);
     checkClose();
     totalDrops++;survivedDrops++;dropsUntilWave--;
@@ -1049,7 +1026,7 @@ async function doOneRise(){
 }
 async function riseStep(){
   waveCount++;updateAtmosphere();
-  SFX.rise();floatEl('warn','🔺 おじゃま岩がせりあがった！');await sleep(440);
+  SFX.rise();floatEl('warn','🔺 下からせりあがった！');await sleep(440);
   await doOneRise();
   applyGravity();render();
   await sleep(200);
@@ -1133,6 +1110,7 @@ function retryStage(){
   const dl=document.createElement('div');dl.className='danger-line';dl.id='dangerLine';tilesEl.appendChild(dl);
   const lb=document.createElement('div');lb.className='danger-label';lb.id='dangerLabel';lb.textContent='⚠ DANGER';tilesEl.appendChild(lb);
   current=rollTier();next=rollTier();
+  updateAtmosphere(); // 現ステージのテーマ色に戻す（body.className='' のままだとStage1色になる）
   updateSkillSlotsUI();updateStageUI();
   updateQueue();updateRiseCounter();
   requestAnimationFrame(()=>{const d=document.getElementById('dangerLine'),l=document.getElementById('dangerLabel');if(d)d.style.top=topOf(DANGER_ROW);if(l)l.style.top=topOf(DANGER_ROW);});
@@ -1201,7 +1179,7 @@ function confirmRetryStage(){hideRestartModal();retryStage();}
 function confirmNewGame(){hideRestartModal();newGame();}
 function showTitleModal(){history.pushState({modal:'title'},'');document.getElementById('titleModal').classList.add('show');}
 function hideTitleModal(){document.getElementById('titleModal').classList.remove('show');}
-function goToTitle(){location.href='index.html';}
+function goToTitle(){_navigating=true;location.href='index.html';}
 document.getElementById('shareBtn').addEventListener('click',()=>{const txt=`🐹どうぶつポトン🦛\nStage${currentStage}到達！\nスコア${score.toLocaleString()} ／ カバ${hippoMade}体 ／ 最大${maxChain}チェイン\n#どうぶつポトン`;if(navigator.share){navigator.share({text:txt}).catch(()=>{});}else{navigator.clipboard.writeText(txt).then(()=>{const b=document.getElementById('shareBtn');b.textContent='コピー済み✓';setTimeout(()=>{b.textContent='シェア📤';},2000);}).catch(()=>{});}});
 let _preGameMode=null; // 'help-from-title' | 'tutorial-help'
 function openHelp(){const p=document.getElementById('helpPanel');if(p.classList.contains('show'))return;p.classList.add('show');history.pushState({modal:'help'},'');}
@@ -1258,14 +1236,20 @@ try{newGame();}catch(e){window.onerror(e.message,'',0,0,e);}
 gamePaused=true; // 盤面は通常どおり組みつつ、チュートリアル選択まで操作だけ止める
 function beginGame(){gamePaused=false;const dl=document.getElementById('dangerLine'),lb=document.getElementById('dangerLabel');if(dl)dl.style.top=topOf(DANGER_ROW);if(lb)lb.style.top=topOf(DANGER_ROW);render();}
 function showTutorialModal(){history.pushState({modal:'tutorial'},'');document.getElementById('tutorialModal').classList.add('show');}
-function tutorialYes(){document.getElementById('tutorialModal').classList.remove('show');_preGameMode='tutorial-help';openHelp();}
-function tutorialNo(){document.getElementById('tutorialModal').classList.remove('show');beginGame();}
+function tutorialYes(){markTutorialSeen();document.getElementById('tutorialModal').classList.remove('show');_preGameMode='tutorial-help';openHelp();}
+function tutorialNo(){markTutorialSeen();document.getElementById('tutorialModal').classList.remove('show');beginGame();}
 // 「あそびかた」から来た＝閉じたらタイトルへ／「はじめる」から来た＝毎回チュートリアル確認
+// デバッグパネルは ?debug=1 のときだけ開けるようにする（本番では露出させない）
+if(new URLSearchParams(location.search).get('debug')==='1'){const db=document.getElementById('debugBtn');if(db)db.style.display='';}
+const LS_SEEN_TUT='animalDrop_seenTutorial_v1';
+function markTutorialSeen(){try{localStorage.setItem(LS_SEEN_TUT,'1');}catch(e){}}
+function hasSeenTutorial(){try{return localStorage.getItem(LS_SEEN_TUT)==='1';}catch(e){return false;}}
 if(new URLSearchParams(location.search).get('help')==='1'){_preGameMode='help-from-title';openHelp();}
+else if(hasSeenTutorial()){beginGame();} // 2回目以降はチュートリアル確認を出さずに即開始
 else{showTutorialModal();}
 // ページ離脱・リロード時の確認（ゲームオーバー後は不要）
 window.addEventListener('beforeunload',e=>{
-  if(overlay.classList.contains('show'))return;
+  if(_navigating||overlay.classList.contains('show'))return;
   e.preventDefault();e.returnValue='';
 });
 
