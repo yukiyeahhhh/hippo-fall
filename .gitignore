@@ -4,3 +4,10 @@ package-lock.json
 # キャラのマスター画像（重い元データ）。ゲームが使うのは assets/tile_*.webp のみ。
 # マスターの軽量版は母艦 yukiya-private/projects/hippo-fall/character-art に保管
 assets/refs/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
