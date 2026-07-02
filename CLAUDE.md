@@ -35,3 +35,9 @@
 - ビルド不要の静的Webゲーム（HTML/CSS/JS）。Cloudflare Pagesのビルド設定は
   **Build command＝空 / Output directory＝`/`**。
 - PWA対応の `manifest.json` あり（ホーム画面に追加可能）。
+
+## 正本の地図（このリポ外）
+
+- 汎用の手法・型 → `~/Documents/knowledge`（索引＝README.md。検証=「ゲームの自動検証」、AI分担=「AI協業の運用」）
+- ゲーム制作フローの正本・監査スキル・武器の要件定義 → `~/Documents/yukiya-private/projects/game-dev-flow/`
+- このリポとknowledgeで見つからない設計文書は、まず上記game-dev-flowを疑う。
