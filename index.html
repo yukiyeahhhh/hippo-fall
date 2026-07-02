@@ -149,9 +149,41 @@
   .hc-emo img{width:18px;height:18px;object-fit:contain;display:block;}
   .hca-emo img{width:26px;height:26px;object-fit:contain;display:block;}
   .hc-title img.ji,.hc-row img.ji{width:1.15em;height:1.15em;object-fit:contain;vertical-align:-0.22em;display:inline-block;}
+
+  /* 起動スプラッシュ（hippo-rocketの#t-splashを移植。ブランド演出→タイトルへ） */
+  #t-splash{position:fixed;inset:0;z-index:200;isolation:isolate;overflow:hidden;
+    background:linear-gradient(180deg,#f8fbff 0%,#d7ecff 55%,#fff4e2 100%);
+    font-family:"M PLUS Rounded 1c",system-ui,sans-serif;}
+  #t-splash.hide{display:none;}
+  #t-splash::before{content:"";position:absolute;inset:-40px;z-index:0;background:
+    radial-gradient(circle at 50% 36%,rgba(255,255,255,.72),rgba(255,255,255,0) 30%),
+    radial-gradient(ellipse at 16% 72%,rgba(255,255,255,.54),rgba(255,255,255,0) 24%),
+    radial-gradient(ellipse at 84% 70%,rgba(255,244,226,.56),rgba(255,244,226,0) 25%);
+    animation:brandSky 3.35s ease-in-out both;}
+  #t-splash::after{content:"";position:absolute;left:50%;top:58%;z-index:0;width:260px;height:84px;transform:translate(-50%,-50%);
+    border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,.48),rgba(255,255,255,0) 70%);
+    filter:blur(3px);animation:brandCloud 3.35s ease-in-out both;}
+  #t-splash .brandmark{position:absolute;left:50%;top:47%;z-index:1;transform:translate(-50%,-50%);text-align:center;color:#2A3550;animation:brandIn 3.25s cubic-bezier(.2,.82,.2,1) both;}
+  #t-splash .brandlogo{font-weight:1000;font-size:29px;letter-spacing:2.4px;text-shadow:0 3px 0 rgba(255,255,255,.82),0 12px 28px rgba(58,122,212,.18);}
+  #t-splash .brandline{width:0;height:6px;border-radius:999px;margin:16px auto 0;background:#E85D43;box-shadow:0 5px 12px rgba(232,93,67,.28);animation:brandLine 3.25s ease both;}
+  #t-splash .brandhint{margin-top:16px;font-size:11px;font-weight:900;color:#5B4167;opacity:0;animation:brandHint 3.25s ease both;}
+  @keyframes brandIn{0%{opacity:0;transform:translate(-50%,-42%) scale(.94)}24%,78%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-54%) scale(1.015)}}
+  @keyframes brandLine{0%,18%{width:0;opacity:0}34%,80%{width:108px;opacity:1}100%{width:108px;opacity:0}}
+  @keyframes brandHint{0%,34%{opacity:0;transform:translateY(5px)}48%,78%{opacity:.62;transform:translateY(0)}100%{opacity:0;transform:translateY(-3px)}}
+  @keyframes brandSky{0%{opacity:.3;transform:scale(1.04)}30%,78%{opacity:1;transform:scale(1)}100%{opacity:.25;transform:scale(1.03)}}
+  @keyframes brandCloud{0%{opacity:0;transform:translate(-50%,-45%) scale(.86)}30%,76%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-55%) scale(1.08)}}
 </style>
 </head>
 <body>
+  <!-- 起動スプラッシュ（hippo-rocketと同じブランド演出。タップ/Space/Enterでスキップ、無操作なら約3.35秒でタイトルへ） -->
+  <div id="t-splash">
+    <div class="brandmark">
+      <div class="brandlogo">YUKIYA GAMES</div>
+      <div class="brandline"></div>
+      <div class="brandhint">tap to skip</div>
+    </div>
+  </div>
+
   <!-- 背景に落ちてくる動物 -->
   <div class="bg-fall" id="bgFall"></div>
 
@@ -266,6 +298,17 @@
   <div class="footer">© どうぶつポトン</div>
 
 <script>
+  // 起動スプラッシュ：hippo-rocketと同じく約3.35秒で自動終了、タップ/クリック/Space/Enterで即スキップ
+  (function(){
+    const sp=document.getElementById('t-splash');
+    if(!sp) return;
+    let done=false;
+    function skipSplash(){ if(done) return; done=true; sp.classList.add('hide'); }
+    sp.addEventListener('click', skipSplash);
+    document.addEventListener('keydown', e=>{ if(e.code==='Space'||e.code==='Enter') skipSplash(); });
+    setTimeout(skipSplash, 3350);
+  })();
+
   const animals=['tile_t1','tile_t2','tile_t3','tile_t4','tile_t5','gimmick_block'];
   const bg=document.getElementById('bgFall');
   for(let i=0;i<14;i++){
