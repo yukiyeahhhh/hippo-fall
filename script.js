@@ -22,8 +22,8 @@ const STAGE_CONFIG=[
   null,
   {goal:1, scoreGoal:1000,  waveInterval:10, rockChance:0.30, rWalnut:1.00, rShell:0.35, wWalnut:0.15, wShell:0.05}, // Stage 1（両方やさしい）
   {goal:2, scoreGoal:3000,  waveInterval:8,  rockChance:0.30, rWalnut:1.00, rShell:0.30, wWalnut:0.13, wShell:0.04}, // Stage 2（波が速く）
-  {goal:2, scoreGoal:6000,  waveInterval:8,  rockChance:0.38, rWalnut:0.80, rShell:0.22, wWalnut:0.10, wShell:0.03}, // Stage 3（波が重く）
-  {goal:3, scoreGoal:10000, waveInterval:6,  rockChance:0.38, rWalnut:0.60, rShell:0.15, wWalnut:0.07, wShell:0.02}, // Stage 4（波が速く）
+  {goal:2, scoreGoal:6000,  waveInterval:7,  rockChance:0.38, rWalnut:0.80, rShell:0.22, wWalnut:0.10, wShell:0.03}, // Stage 3（波が重く。St3→4の崖を緩和するためwaveIntervalを1段前倒し）
+  {goal:3, scoreGoal:10000, waveInterval:6,  rockChance:0.38, rWalnut:0.65, rShell:0.15, wWalnut:0.07, wShell:0.02}, // Stage 4（波が速く。rWalnutの落ち幅を0.20→0.15に緩和、残りはSt4→5側へ）
   {goal:3, scoreGoal:20000, waveInterval:6,  rockChance:0.46, rWalnut:0.45, rShell:0.10, wWalnut:0.05, wShell:0.015},// Stage 5（波が重く／∞は間隔5・岩0.50で別途）
 ];
 const TOTAL_STAGES=5;
