@@ -939,7 +939,8 @@ async function birthAnyHippos(){
   if(births.length===0)return false;
   for(const id of births){const el=document.getElementById('tile-'+id);if(el)el.classList.add('hippo-born');hippoMade++;addKill(MAX_TIER);addScore(HIPPO_SCORE);}
   render();updateStageUI();
-  SFX.itemHippo(2);await showCutin('コビトカバ誕生！','');
+  MUSIC.pause();await sleep(180);MUSIC.resumeFromPause(); // カットイン直前にBGMを一拍だけ無音にして"間"を作る
+  SFX.itemHippo(2);vibrate([15,40,20]);await showCutin('コビトカバ誕生！','');
   floatEl('toast','🦛 コビトカバ誕生！');SFX.bigmerge(5);burst();burst();shake();
   await sleep(900);
   return true;
