@@ -982,9 +982,9 @@ async function resolveBoard(){
     render();
     survBumps.forEach(b=>{if(tiles[b.id])mergeFx(b.id,b.tier);});
     if(chain>=2)floatEl('chain',`🔥 ${chain}チェイン ×${(1+(chain-1)*0.2).toFixed(1)}`);
-    if(bigLeap){floatEl('chain','✨ 大進化！');SFX.bigmerge(3);burst();shake();}
-    else if(chain>=2){SFX.chain(chain);if(chain>=3)shake();}
-    else{const nb=survBumps[0];if(nb&&tiles[nb.id])SFX.merge(tiles[nb.id].tier||2);}
+    if(bigLeap){floatEl('chain','✨ 大進化！');SFX.bigmerge(3);burst();shake();vibrate(25);}
+    else if(chain>=2){SFX.chain(chain);if(chain>=3)shake();vibrate(15);}
+    else{const nb=survBumps[0];if(nb&&tiles[nb.id]){SFX.merge(tiles[nb.id].tier||2);flashTile(nb.id);vibrate(8);}}
     maxChain=Math.max(maxChain,chain);updateStageUI();
     // カバ(T5)ができても即打ち切らず、他の連鎖を最後まで流す（落ち着いた時点でカバ誕生→全破壊）
     await sleep(140);applyGravity();render();await sleep(210);
@@ -1094,6 +1094,10 @@ function floatScoreAt(tileId,n){
   setTimeout(()=>f.remove(),760);
 }
 function shake(){boardEl.classList.remove('shake');void boardEl.offsetWidth;boardEl.classList.add('shake');setTimeout(()=>boardEl.classList.remove('shake'),360);}
+// 通常合体（chain=1）用の軽いフラッシュ。大進化/チェインは既存の粒子・シェイクで十分厚いので対象外
+function flashTile(id){const el=document.getElementById('tile-'+id);if(!el)return;el.classList.remove('merge-flash');void el.offsetWidth;el.classList.add('merge-flash');setTimeout(()=>el.classList.remove('merge-flash'),160);}
+// Android等の対応端末のみ反応（iOS Safari非対応と割り切る）
+function vibrate(pattern){try{if(navigator.vibrate)navigator.vibrate(pattern);}catch(e){}}
 function burst(){const ico=['✨','💫','⭐','🦛'];for(let i=0;i<8;i++){const p=document.createElement('div');p.className='particle';const ang=Math.random()*6.28,dist=42+Math.random()*55;p.style.left=(35+Math.random()*30)+'%';p.style.top=(30+Math.random()*30)+'%';p.style.setProperty('--tx',(Math.cos(ang)*dist)+'px');p.style.setProperty('--ty',(Math.sin(ang)*dist)+'px');p.textContent=ico[i%4];boardEl.appendChild(p);setTimeout(()=>p.remove(),620);}}
 // 指定マス(c,r)の中心で弾けるパーティクル（集合→ポンッ用）
 function burstAt(c,r){const ico=['✨','💫','⭐'];const x=(c+0.5)/COLS*100,y=(r+0.5)/ROWS*100;for(let i=0;i<7;i++){const p=document.createElement('div');p.className='particle';const ang=Math.random()*6.28,dist=30+Math.random()*45;p.style.left=x+'%';p.style.top=y+'%';p.style.setProperty('--tx',(Math.cos(ang)*dist)+'px');p.style.setProperty('--ty',(Math.sin(ang)*dist)+'px');p.textContent=ico[i%3];boardEl.appendChild(p);setTimeout(()=>p.remove(),620);}}
