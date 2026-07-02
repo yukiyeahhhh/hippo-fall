@@ -983,9 +983,9 @@ async function resolveBoard(){
     render();
     survBumps.forEach(b=>{if(tiles[b.id])mergeFx(b.id,b.tier);});
     if(chain>=2)floatEl('chain',`🔥 ${chain}チェイン ×${(1+(chain-1)*0.2).toFixed(1)}`);
-    if(bigLeap){floatEl('chain','✨ 大進化！');SFX.bigmerge(3);burst();shake();vibrate(25);}
-    else if(chain>=2){SFX.chain(chain);if(chain>=3)shake();vibrate(15);}
-    else{const nb=survBumps[0];if(nb&&tiles[nb.id]){SFX.merge(tiles[nb.id].tier||2);flashTile(nb.id);vibrate(8);}}
+    if(bigLeap){floatEl('chain','✨ 大進化！');SFX.bigmerge(3);burst();shake();}
+    else if(chain>=2){SFX.chain(chain);if(chain>=3)shake();}
+    else{const nb=survBumps[0];if(nb&&tiles[nb.id]){SFX.merge(tiles[nb.id].tier||2);flashTile(nb.id);}}
     maxChain=Math.max(maxChain,chain);updateStageUI();
     // カバ(T5)ができても即打ち切らず、他の連鎖を最後まで流す（落ち着いた時点でカバ誕生→全破壊）
     await sleep(140);applyGravity();render();await sleep(210);
