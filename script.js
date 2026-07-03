@@ -95,14 +95,26 @@ function continueFromSave(s){currentStage=s.stage;score=s.score||0;renderScore()
 
 // ─ 共有 AudioContext ─
 let _audioCtx=null;
+let _sfxBus=null;
 function getCtx(){if(!_audioCtx)try{_audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}if(_audioCtx&&_audioCtx.state==='suspended')_audioCtx.resume();return _audioCtx;}
-let _sfxVol=1.5;
-function tone(freq,type,dur,vol=0.28,t=0){const c=getCtx();if(!c)return;const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=freq;const v=Math.min(vol*_sfxVol,2.0);g.gain.setValueAtTime(v,c.currentTime+t);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+t+dur);o.connect(g);g.connect(c.destination);o.start(c.currentTime+t);o.stop(c.currentTime+t+dur+0.05);}
+// SFX共通バス：コンプレッサーを挟んでゲインを底上げしてもクリップしないようにする
+function getSfxBus(){const c=getCtx();if(!c)return null;if(!_sfxBus){_sfxBus=c.createDynamicsCompressor();_sfxBus.threshold.value=-10;_sfxBus.knee.value=8;_sfxBus.ratio.value=6;_sfxBus.attack.value=0.002;_sfxBus.release.value=0.12;_sfxBus.connect(c.destination);}return _sfxBus;}
+let _sfxVol=1.7;
+function tone(freq,type,dur,vol=0.28,t=0){const c=getCtx();if(!c)return;const bus=getSfxBus();if(!bus)return;const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=freq;const v=Math.min(vol*_sfxVol,2.6);g.gain.setValueAtTime(v,c.currentTime+t);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+t+dur);o.connect(g);g.connect(bus);o.start(c.currentTime+t);o.stop(c.currentTime+t+dur+0.05);}
 
 // ─ SFX ─
 const SFX={
   drop(){tone(100,'sine',0.07,0.72);},
-  merge(tier){const b=200+tier*52;tone(b,'triangle',0.13,0.36);tone(b*1.5,'triangle',0.1,0.24,0.055);tone(b*2,'sine',0.09,0.13,0.055);},
+  // 通常合体（chain=1）：既存チャイムに低域サム(打撃感)をレイヤー。sizeが大きいほど軽くピッチアップ
+  merge(tier,size=3){
+    const b=200+tier*52;
+    const extra=Math.min(Math.max((size||3)-3,0),4);
+    const pitch=1+extra*0.03;
+    tone(70+tier*3,'sine',0.09,0.55);
+    tone(b*pitch,'triangle',0.14,0.48,0.015);
+    tone(b*1.5*pitch,'triangle',0.11,0.32,0.07);
+    tone(b*2*pitch,'sine',0.1,0.18,0.07);
+  },
   bigmerge(tier){for(let i=0;i<3;i++)tone(260+tier*70+i*45,'triangle',0.12,0.2,i*0.07);},
   rowclear(){tone(80,'triangle',0.24,0.34);for(let i=0;i<5;i++)tone(160+i*120,'sine',0.16,0.18,0.05+i*0.06);},
   itemSpawn(){for(let i=0;i<4;i++)tone(380+i*140,'sine',0.08,0.16,i*0.05);},
@@ -226,7 +238,7 @@ const BGM=(()=>{
   const audio=new Audio();
   audio.loop=true;
   let playingId=null;
-  try{const s=JSON.parse(localStorage.getItem(LS_BGM)||'{}');sel=s.sel||'auto';vol=s.vol??0.5;_sfxVol=s.sfxVol??1.5;}catch(e){}
+  try{const s=JSON.parse(localStorage.getItem(LS_BGM)||'{}');sel=s.sel||'auto';vol=s.vol??0.5;_sfxVol=s.sfxVol??1.7;}catch(e){}
   function save(){try{localStorage.setItem(LS_BGM,JSON.stringify({sel,vol,sfxVol:_sfxVol}));}catch(e){}}
   let _fadeTimer=null;
   function _clearFade(){if(_fadeTimer){clearInterval(_fadeTimer);_fadeTimer=null;}}
@@ -971,7 +983,7 @@ async function resolveBoard(){
         tiles[cid].r=surv.r;tiles[cid].c=surv.c;
         removeSet.add(cid);addKill(cp.tier);
       }
-      survBumps.push({id:sid,tier:newTier});
+      survBumps.push({id:sid,tier:newTier,size});
       chargeForTier(newTier);
       const gained=Math.round(newTier*size*SCORE_BASE*(1+(chain-1)*0.2));
       addScore(gained);floatScoreAt(sid,gained);
@@ -985,7 +997,7 @@ async function resolveBoard(){
     if(chain>=2)floatEl('chain',`🔥 ${chain}チェイン ×${(1+(chain-1)*0.2).toFixed(1)}`);
     if(bigLeap){floatEl('chain','✨ 大進化！');SFX.bigmerge(3);burst();shake();}
     else if(chain>=2){SFX.chain(chain);if(chain>=3)shake();}
-    else{const nb=survBumps[0];if(nb&&tiles[nb.id]){SFX.merge(tiles[nb.id].tier||2);flashTile(nb.id);}}
+    else{const nb=survBumps[0];if(nb&&tiles[nb.id]){SFX.merge(tiles[nb.id].tier||2,nb.size);flashTile(nb.id);}}
     maxChain=Math.max(maxChain,chain);updateStageUI();
     // カバ(T5)ができても即打ち切らず、他の連鎖を最後まで流す（落ち着いた時点でカバ誕生→全破壊）
     await sleep(140);applyGravity();render();await sleep(210);
